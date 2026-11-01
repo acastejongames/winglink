@@ -5,6 +5,11 @@ on:
     branches:
       - arena/d4554afa-winglink
   workflow_dispatch:
+    inputs:
+      auth_probe:
+        description: 'Attempt a real Supabase signup to diagnose auth errors'
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -70,20 +75,39 @@ jobs:
               missing=1
             fi
           done
-          echo "── RPC probe ──"
+          echo "── RPC probe (informational: anon has no EXECUTE grant, 404 expected) ──"
           code=$(curl -s -o /tmp/sb.json -w '%{http_code}' -X POST \
             -H "apikey: ${VITE_SUPABASE_ANON_KEY}" -H "Content-Type: application/json" \
             "${VITE_SUPABASE_URL}/rest/v1/rpc/ensure_dm" -d '{}' || echo 000)
-          echo "rpc ensure_dm → HTTP ${code} $(head -c 160 /tmp/sb.json)"
-          if [ "${code}" = "404" ]; then
-            echo "::error title=Missing RPC::ensure_dm function not found — re-run supabase/schema.sql."
-            missing=1
-          fi
+          echo "rpc ensure_dm as anon → HTTP ${code} $(head -c 160 /tmp/sb.json)"
           if [ "${missing}" != "0" ]; then
             echo "::error title=Backend schema incomplete::See the per-table annotations above — re-run the FULL supabase/schema.sql in the SQL Editor (check the first error in its results)."
             exit 1
           fi
           echo "✓ Supabase: all tables + RPCs present"
+
+      - name: Auth signup probe (on-demand)
+        if: github.event_name == 'workflow_dispatch' && inputs.auth_probe
+        run: |
+          set -uo pipefail
+          PROBE_EMAIL="winglink-ci-probe-${GITHUB_RUN_ID}@example.com"
+          echo "Signing up probe user ${PROBE_EMAIL} …"
+          code=$(curl -s -o /tmp/signup.json -w '%{http_code}' -X POST \
+            -H "apikey: ${VITE_SUPABASE_ANON_KEY}" -H "Content-Type: application/json" \
+            "${VITE_SUPABASE_URL}/auth/v1/signup" \
+            -d "{\"email\": \"${PROBE_EMAIL}\", \"password\": \"CiProbe-Passw0rd-2026\", \"data\": {\"username\": \"ci_probe_${GITHUB_RUN_ID}\", \"display_name\": \"CI Probe\", \"interests\": []}}")
+          echo "signup → HTTP ${code}"
+          cat /tmp/signup.json | head -c 600
+          echo
+          if grep -qi "database error" /tmp/signup.json; then
+            echo "::error title=Signup broken::GoTrue cannot create the user (trigger failing). See raw response above; re-run supabase/schema.sql."
+            exit 1
+          fi
+          if [ "${code}" = "200" ] || [ "${code}" = "201" ]; then
+            echo "::notice title=Signup OK::Probe signup succeeded (id $(head -c 200 /tmp/signup.json | sed -n 's/.*\"id\":\"\([^\"]*\\).*/\1/p'))"
+          else
+            echo "::warning title=Signup response::HTTP ${code} — inspect body above"
+          fi
 
       - name: Build
         run: npm run build
