@@ -114,9 +114,9 @@ export default function Profile() {
                     </Button>
                   )}
                   <Button
-                    onClick={() => {
-                      const convId = ensureConversationWith(user.id)
-                      navigate(`/messages/${convId}`)
+                    onClick={async () => {
+                      const convId = await ensureConversationWith(user.id)
+                      if (convId) navigate(`/messages/${convId}`)
                     }}
                   >
                     <MessageSquare className="h-4 w-4" /> {t('common.message')}

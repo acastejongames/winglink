@@ -40,6 +40,9 @@ jobs:
           # GitHub Pages serves project sites from /winglink/
           VITE_BASE: /winglink/
           OG_IMAGE: https://acastejongames.github.io/winglink/images/f22-sunset.jpg
+          # Cloud backend (optional — app runs in local vault mode when unset)
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3

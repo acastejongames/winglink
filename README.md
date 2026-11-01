@@ -84,11 +84,15 @@ at sign-up.
 
 ## Accounts & data
 
-- Accounts are created through sign-up; posts, likes, messages and XP persist
-  in the encrypted local vault between visits.
-- The data layer is architected to plug into **Supabase** (auth, Postgres,
-  storage, realtime) when a project is connected — account, content and social
-  graphs map cleanly onto its tables.
+- **Cloud mode (real network)**: when `VITE_SUPABASE_URL` /
+  `VITE_SUPABASE_ANON_KEY` are configured (see [`docs/SUPABASE.md`](docs/SUPABASE.md)),
+  accounts, posts, comments, reactions, follows, communities, DMs and
+  notifications are stored in Supabase (Postgres + RLS + Realtime) and shared
+  live across all users. XP is granted by server-side triggers, not the client.
+- **Local mode (no env vars)**: the app falls back to an on-device encrypted
+  vault (AES-256-GCM, password-derived keys) — data persists between visits on
+  that device only.
+- The full backend schema lives in [`supabase/schema.sql`](supabase/schema.sql).
 - Aircraft photography comes from free stock collections (Pexels, Pixabay and
   public-domain/press imagery).
 - No advertising, no subscriptions, no paid competitive advantages.

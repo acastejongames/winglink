@@ -1,115 +1,81 @@
-# Connecting Supabase — WingLink
+# Connecting Supabase (WingLink cloud backend)
 
-WingLink runs fully client-side today (encrypted local vault). This is the
-fastest path to a **real, multi-user network** with Supabase. Estimated
-effort is listed per phase — do them in order; each phase ships working
-software.
+The full backend is **already implemented in this repo**:
 
-## 0. Create the project (5 min)
+| Piece | Where |
+|---|---|
+| Complete schema + RLS + XP triggers + Realtime + Storage | `supabase/schema.sql` |
+| Client + media uploads | `src/lib/supabase.ts` |
+| All networked reads/writes (posts, comments, reactions, follows, friends, communities, DMs, notifications, quiz/XP) | `src/lib/cloud.ts` |
+| Dual-mode store (cloud when env present, encrypted local vault otherwise) | `src/lib/store.tsx` |
+| CI wiring (secrets → build) | `.github/workflows/deploy-pages.yml` |
 
-1. Create a free project at [supabase.com](https://supabase.com).
-2. From **Project Settings → API** copy:
+Without env vars the app runs exactly as before (on-device encrypted vault).
+With env vars it becomes a **real multi-user network**: posts, comments, likes,
+follows, DMs and notifications are shared across everyone, live (Realtime),
+protected by Row Level Security.
+
+## Setup (once, ~5 minutes)
+
+1. **Create the project**: [supabase.com](https://supabase.com) → New project.
+   Keep the database password safe — it is never needed by the app and must
+   never be committed anywhere.
+2. **Run the schema**: Dashboard → **SQL Editor** → paste the entire contents of
+   [`supabase/schema.sql`](../supabase/schema.sql) → **Run**. This creates all
+   tables, RLS policies, XP triggers, RPCs, the `media` Storage bucket and the
+   Realtime publication.
+3. **Get the public credentials**: Dashboard → **Project Settings → API**:
    - `Project URL` → `VITE_SUPABASE_URL`
-   - `anon` public key → `VITE_SUPABASE_ANON_KEY`
-3. Create `.env.local` (never commit it — `.env*` is already gitignored):
+   - `anon public` key → `VITE_SUPABASE_ANON_KEY`
+     (this key is *meant* to be public — it ships in the browser bundle; RLS is
+     the real gatekeeper. Never commit the `service_role` key or the DB password.)
+4. **Local dev**: copy `.env.example` to `.env.local` and fill the two values.
+5. **Production (GitHub Pages)**: repo **Settings → Secrets and variables →
+   Actions → New repository secret**, twice:
+   - `VITE_SUPABASE_URL`
+   - `VITE_SUPABASE_ANON_KEY`
 
-```bash
-VITE_SUPABASE_URL=https://xxxx.supabase.co
-VITE_SUPABASE_ANON_KEY=eyJhbGciOi...
-```
+   Push to `arena/d4554afa-winglink` — the workflow bakes them into the build.
+6. **Auth settings** (Dashboard → Authentication → Providers → Email):
+   - For instant onboarding: turn **Confirm email** OFF (recommended while
+     building/testing). If left ON, new users must click the confirmation link
+     before signing in.
+   - Password min length: set to 8 to match the client.
 
-4. `npm i @supabase/supabase-js` and create `src/lib/supabase.ts`:
+## Verify
 
-```ts
-import { createClient } from '@supabase/supabase-js'
+1. Sign up with two different emails in two different browsers.
+2. Publish a post with user A → it appears for user B instantly (Realtime).
+3. React/comment with B → A gets a live notification.
+4. DM A↔B → delivered in realtime; a third account cannot see the thread
+   (RLS `conversation_members`-only).
+5. XP: posting grants +15 server-side (trigger) — the browser cannot inflate it.
 
-export const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL as string,
-  import.meta.env.VITE_SUPABASE_ANON_KEY as string,
-)
-```
+## Architecture notes
 
-## 1. Auth (half a day) — replace the local sign-in
+- **Auth**: Supabase Auth (email + password). The client never stores passwords;
+  a DB trigger (`handle_new_user`) creates the profile row and grants the
+  +150 signup XP.
+- **XP is server-owned**: triggers on `posts`, `comments`, `reactions`,
+  `follows`, `friendships`, `community_members` + RPCs `submit_quiz`,
+  `claim_challenge_xp`. The client only *displays* XP (level-up toast on
+  realtime profile updates).
+- **Privacy**: emails live only in Supabase Auth; DMs readable only by their
+  members; profiles carry no email column; reports go to a table only staff can
+  read (Dashboard).
+- **Device-local** (not synced): theme, language, saved posts, favorites,
+  collections, claim state of seasonal challenges, and the on-device encrypted
+  vault used in local mode.
+- **Honest limit**: messages are RLS-protected (nobody outside the conversation
+  can read them) but not end-to-end encrypted — Supabase could theoretically
+  read them. Client-side E2EE is possible as a future layer (the local vault
+  crypto in `src/lib/crypto.ts` is the building block).
 
-- Turn on **Email + Password** in Authentication → Providers.
-- In `src/lib/store.tsx` swap the two auth functions:
-  - `signUp` → `supabase.auth.signUp({ email, password, options: { data: { username, display_name } } })`
-  - `signIn` → `supabase.auth.signInWithPassword({ email, password })`
-  - Subscribe once: `supabase.auth.onAuthStateChange(...)` → set/clear
-    `authUserId` from `supabase.auth.getSession()`.
-- Keep the local vault ONLY as an optional extra (e.g. encrypting DMs
-  client-side later). Server-side auth + RLS becomes the source of truth.
-- Profiles: upsert a `profiles` row on first sign-in trigger
-  (`auth.users` → `profiles` via SQL trigger, simplest and safe).
+## Triage
 
-## 2. Posts & feed (1–2 days)
-
-Table (RLS: public read, author write):
-
-```sql
-create table posts (
-  id uuid primary key default gen_random_uuid(),
-  author_id uuid not null references auth.users(id) on delete cascade,
-  type text not null default 'text',
-  text text not null default '',
-  images jsonb not null default '[]',
-  visibility text not null default 'public',
-  community_id uuid,
-  hashtags jsonb not null default '[]',
-  likes int not null default 0,
-  created_at timestamptz not null default now()
-);
-alter table posts enable row level security;
-create policy "public read" on posts for select using (true);
-create policy "author write" on posts for insert with check (auth.uid() = author_id);
-create policy "author edit" on posts for update using (auth.uid() = author_id);
-create policy "author delete" on posts for delete using (auth.uid() = author_id);
-```
-
-- In the store: `addPost` → `supabase.from('posts').insert(...)`, load the
-  feed with `select('*').order('created_at', { ascending: false })`.
-- Same pattern for `comments`, `reactions`, `follows`, `communities`,
-  `community_members`, `notifications`.
-
-## 3. Media (half a day)
-
-- Create a public **Storage bucket** `media`.
-- Replace `fileToCompressedDataUrl` uploads with
-  `supabase.storage.from('media').upload(\`posts/${uuid}.jpg\`, file)` and
-  store the returned public URL in `images[]`. This also shrinks your
-  localStorage vault (photos no longer base64).
-
-## 4. Messaging + realtime (1 day)
-
-- Tables `conversations`, `conversation_members`, `messages` (RLS: members
-  only — `exists (select 1 from conversation_members where conversation_id = ... and user_id = auth.uid())`).
-- Subscribe: `supabase.channel('msgs').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, ...)`.
-
-## 5. XP / quiz records (half a day)
-
-- Move `stats`, `xp`, `quiz_records` to a `profiles`/`quiz_records` table;
-  write XP changes in the same transaction as the action (or a Postgres
-  function `add_xp(delta)`) so clients can't self-award arbitrarily.
-
-## What stays client-side
-
-- Theme, language, draft composer state — unaffected.
-- The existing encrypted vault can keep acting as the **DM end-to-end
-  layer** later: after Supabase auth, wrap a per-conversation DEK with the
-  members' keys and store only ciphertext in `messages.content`. Not needed
-  for launch — RLS already protects reads.
-
-## Migration of existing local accounts
-
-Not worth it: the vault holds at most your own test data. Ship Supabase
-auth fresh; keep the local vault as an offline fallback behind a feature
-flag if you want.
-
-## Env plumbing checklist
-
-- [ ] `.env.local` with the two vars (gitignored)
-- [ ] `src/lib/supabase.ts` client
-- [ ] GitHub Action: add `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY`
-      as repository secrets and map them into the build step env
-- [ ] Enable RLS on **every** table before first deploy — never ship an
-      open table
+- App shows the local vault instead of the network → env vars missing in that
+  build (check `.env.local` / GitHub secrets).
+- "Server error" toasts → schema not yet run, or RLS blocking: re-run
+  `supabase/schema.sql` (it is idempotent).
+- Realtime silent → table missing from the `supabase_realtime` publication
+  (Dashboard → Database → Replication).

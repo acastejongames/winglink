@@ -3,6 +3,7 @@ import { CheckCircle2, Globe2, Plane, ShieldCheck, Sparkles } from 'lucide-react
 import { Logo } from '@/components/Logo'
 import { Button, Card, Input } from '@/components/ui/Primitives'
 import { useStore } from '@/lib/store'
+import { isCloud } from '@/lib/supabase'
 import { useI18n } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 
@@ -32,7 +33,7 @@ export default function AuthPage() {
     try {
       const res =
         mode === 'in'
-          ? await signIn(username, password)
+          ? await signIn(isCloud() ? email : username, password)
           : ageOk
             ? await signUp({ email, username, displayName, password, interests })
             : { ok: false as const, error: t('auth.errAge') }
@@ -112,14 +113,16 @@ export default function AuthPage() {
                 {mode === 'up' && (
                   <AuthDarkInput label={t('auth.displayName')} value={displayName} onChange={setDisplayName} hint={t('auth.displayNameHint')} />
                 )}
-                <AuthDarkInput
-                  label={t('auth.username')}
-                  value={username}
-                  onChange={setUsername}
-                  placeholder="spotter_jane"
-                  autoComplete="username"
-                />
-                {mode === 'up' && (
+                {mode === 'up' || !isCloud() ? (
+                  <AuthDarkInput
+                    label={t('auth.username')}
+                    value={username}
+                    onChange={setUsername}
+                    placeholder="spotter_jane"
+                    autoComplete="username"
+                  />
+                ) : null}
+                {mode === 'up' || isCloud() ? (
                   <AuthDarkInput
                     label={t('auth.email')}
                     value={email}
@@ -128,7 +131,7 @@ export default function AuthPage() {
                     placeholder="you@example.com"
                     autoComplete="email"
                   />
-                )}
+                ) : null}
                 <AuthDarkInput
                   label={t('auth.password')}
                   value={password}
@@ -181,6 +184,13 @@ export default function AuthPage() {
                   {busy ? `${t('common.loading')}…` : mode === 'up' ? t('auth.createCta') : t('auth.signIn')}
                 </Button>
               </form>
+
+              {isCloud() && (
+                <p className="mt-4 flex items-center justify-center gap-1.5 text-center text-xs font-medium text-sky-700 dark:text-sky">
+                  <ShieldCheck className="h-3.5 w-3.5" />
+                  {t('auth.cloudOn')}
+                </p>
+              )}
             </Card>
           </div>
         </div>
