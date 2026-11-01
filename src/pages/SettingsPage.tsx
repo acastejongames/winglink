@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { AlertTriangle, Bell, Globe2, Lock, Moon, Shield, Sun, Trash2, UserX } from 'lucide-react'
+import { Bell, Globe2, Lock, Moon, Shield, Sun, Trash2, UserX } from 'lucide-react'
 import { useStore } from '@/lib/store'
 import { useI18n } from '@/lib/i18n'
 import { useToast } from '@/components/ui/Toast'
@@ -33,14 +33,12 @@ export default function SettingsPage() {
           <UserAvatar user={me} size="lg" />
           <div className="min-w-0 flex-1">
             <p className="truncate font-semibold">{me.displayName}</p>
-            <p className="truncate text-sm text-cloud-500">@{me.username} · {me.email ?? 'local account'}</p>
-            {me.isDemo && <Badge tone="demo" className="mt-1">{t('app.demoBadge')}</Badge>}
+            <p className="truncate text-sm text-cloud-500">@{me.username}{me.email ? ` · ${me.email}` : ''}</p>
           </div>
           <Link to={`/profile/${me.username}`}>
             <Button variant="outline" size="sm">{t('nav.profile')}</Button>
           </Link>
         </div>
-        <p className="mt-3 text-xs leading-relaxed text-cloud-500">{t('auth.localNote')}</p>
       </Card>
 
       {/* appearance & language */}
@@ -172,9 +170,6 @@ export default function SettingsPage() {
       <Card className="p-5">
         <SectionHeader title={t('settings.about')} icon={<Logo compact />} />
         <p className="text-sm leading-relaxed text-navy-700 dark:text-cloud-200">{t('settings.aboutBody')}</p>
-        <p className="mt-3 flex items-start gap-2 rounded-xl bg-amber-500/10 p-3 text-xs leading-relaxed text-amber-600 dark:text-amber-400">
-          <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" /> {t('settings.aboutDemo')}
-        </p>
         <p className="mt-3 text-xs text-cloud-500">{t('settings.version', { v: '1.0.0' })}</p>
 
         <div className="mt-5 flex flex-wrap gap-2 border-t border-cloud-200 pt-4 dark:border-navy-700">

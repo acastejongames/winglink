@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   Bookmark, Camera, ChevronLeft, ChevronRight, Heart, MessageCircle, MoreHorizontal,
@@ -112,7 +112,6 @@ function CommentRow({ post, comment, isReply }: { post: Post; comment: Comment; 
             <Link to={`/profile/${author?.username}`} className="text-sm font-semibold text-navy-800 dark:text-cloud-100">
               {author?.displayName ?? '—'}
             </Link>
-            {author?.isDemo && <Badge tone="demo">{t('app.demoBadge')}</Badge>}
             <span className="text-xs text-cloud-500">{timeAgo(comment.createdAt, lang)}</span>
           </div>
           <p className="mt-0.5 break-words text-sm text-navy-700 dark:text-cloud-200">
@@ -174,6 +173,14 @@ export function PostCard({ post, showCommunity }: { post: Post; showCommunity?: 
   const [shareOpen, setShareOpen] = useState(false)
   const reactTimer = useRef<number | null>(null)
 
+  // close the post menu when clicking anywhere else
+  useEffect(() => {
+    if (!menuOpen) return
+    const close = () => setMenuOpen(false)
+    document.addEventListener('click', close)
+    return () => document.removeEventListener('click', close)
+  }, [menuOpen])
+
   const topReactions = useMemo(
     () =>
       Object.entries(post.reactions)
@@ -203,11 +210,6 @@ export function PostCard({ post, showCommunity }: { post: Post; showCommunity?: 
             <Link to={`/profile/${author.username}`} className="text-sm text-cloud-500 hover:underline">
               {timeAgo(post.createdAt, lang)}
             </Link>
-            {post.isDemo && (
-              <Badge tone="demo" title={t('common.demo')}>
-                {t('app.demoBadge')}
-              </Badge>
-            )}
             {post.visibility === 'followers' && <Badge tone="sky">{t('composer.visibilityFollowers')}</Badge>}
           </div>
           {showCommunity && community && (
@@ -219,14 +221,20 @@ export function PostCard({ post, showCommunity }: { post: Post; showCommunity?: 
         </div>
         <div className="relative">
           <button
-            onClick={() => setMenuOpen((v) => !v)}
-            aria-label="Post menu"
+            onClick={(e) => {
+              e.stopPropagation()
+              setMenuOpen((v) => !v)
+            }}
+            aria-label={t('post.menu')}
             className="rounded-full p-1.5 text-cloud-500 hover:bg-cloud-100 dark:hover:bg-navy-700"
           >
             <MoreHorizontal className="h-5 w-5" />
           </button>
           {menuOpen && (
-            <div className="absolute right-0 top-9 z-20 w-56 animate-scale-in overflow-hidden rounded-xl border border-cloud-200 bg-white py-1.5 shadow-card-hover dark:border-navy-600 dark:bg-navy-900">
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className="absolute right-0 top-9 z-20 w-56 animate-scale-in overflow-hidden rounded-xl border border-cloud-200 bg-white py-1.5 shadow-card-hover dark:border-navy-600 dark:bg-navy-900"
+            >
               <button
                 onClick={() => {
                   navigator.clipboard?.writeText(appUrl(`home?post=${post.id}`))

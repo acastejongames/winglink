@@ -193,7 +193,6 @@ export default function Home() {
         <footer className="px-1 pb-6 text-center text-[11px] leading-relaxed text-cloud-400">
           <p className="font-display font-semibold text-cloud-500 dark:text-cloud-400">WingLink · {t('footer.tagline')}</p>
           <p className="mt-1">{t('footer.free')} · {t('footer.noAds')} · {t('footer.safety')}</p>
-          <p className="mt-2">{t('app.demoNote')}</p>
         </footer>
       </aside>
     </div>

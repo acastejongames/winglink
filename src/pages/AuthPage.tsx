@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { CheckCircle2, Globe2, Plane, ShieldCheck, Sparkles } from 'lucide-react'
-import { Logo, LogoMark } from '@/components/Logo'
+import { Logo } from '@/components/Logo'
 import { Button, Card, Input } from '@/components/ui/Primitives'
 import { useStore } from '@/lib/store'
 import { useI18n } from '@/lib/i18n'
@@ -13,7 +13,7 @@ const INTEREST_OPTIONS = [
 
 export default function AuthPage() {
   const { t, lang, setLang } = useI18n()
-  const { signIn, signUp, signInDemo } = useStore()
+  const { signIn, signUp } = useStore()
   const [mode, setMode] = useState<'in' | 'up'>('up')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -147,19 +147,6 @@ export default function AuthPage() {
                   {mode === 'up' ? t('auth.createCta') : t('auth.signIn')}
                 </Button>
               </form>
-
-              <div className="my-5 flex items-center gap-3 text-xs text-cloud-400">
-                <span className="h-px flex-1 bg-cloud-300/30" />
-                ·
-                <span className="h-px flex-1 bg-cloud-300/30" />
-              </div>
-
-              <Button variant="outline" className="w-full" onClick={signInDemo}>
-                <LogoMark size={18} />
-                {t('auth.demoSignIn')}
-              </Button>
-              <p className="mt-2 text-center text-[11px] text-cloud-500">{t('auth.demoSignInHint')}</p>
-              <p className="mt-4 text-center text-[11px] leading-relaxed text-cloud-500">{t('auth.localNote')}</p>
             </Card>
           </div>
         </div>

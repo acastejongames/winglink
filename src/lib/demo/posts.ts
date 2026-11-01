@@ -1,7 +1,7 @@
 import type { Post } from '../types'
 import { daysAgo, hoursAgo } from '../utils'
 
-/** Seeded social feed content — clearly flagged `isDemo` in the UI. */
+/** Seeded feed content from the founding community. */
 export const demoPosts: Post[] = [
   {
     id: 'p_01',
@@ -46,7 +46,6 @@ export const demoPosts: Post[] = [
     myReaction: null,
     hashtags: ['sunrise', 'a350', 'flightdeck'],
     mentions: ['maya_flies', 'alex'],
-    isDemo: true,
   },
   {
     id: 'p_02',
@@ -91,7 +90,6 @@ export const demoPosts: Post[] = [
     myReaction: null,
     hashtags: ['spotting', 'barcelona', 'a350', 'airplanephotography'],
     mentions: ['yuki'],
-    isDemo: true,
   },
   {
     id: 'p_03',
@@ -137,7 +135,6 @@ export const demoPosts: Post[] = [
     votedOptionId: null,
     hashtags: ['airshow', 'eurofighter'],
     mentions: [],
-    isDemo: true,
   },
   {
     id: 'p_04',
@@ -174,7 +171,6 @@ export const demoPosts: Post[] = [
     myReaction: null,
     hashtags: ['aviationhistory', 'spitfire'],
     mentions: [],
-    isDemo: true,
   },
   {
     id: 'p_05',
@@ -218,7 +214,6 @@ export const demoPosts: Post[] = [
     myReaction: null,
     hashtags: ['f14tomcat', 'navalaviation'],
     mentions: [],
-    isDemo: true,
   },
   {
     id: 'p_06',
@@ -246,7 +241,6 @@ export const demoPosts: Post[] = [
     myReaction: null,
     hashtags: ['airshow', 'superhornet', 'photography'],
     mentions: [],
-    isDemo: true,
   },
   {
     id: 'p_07',
@@ -291,7 +285,6 @@ export const demoPosts: Post[] = [
     myReaction: null,
     hashtags: ['flightsim', 'a320', 'homecockpit'],
     mentions: [],
-    isDemo: true,
   },
   {
     id: 'p_08',
@@ -326,7 +319,6 @@ export const demoPosts: Post[] = [
     myReaction: null,
     hashtags: ['helicopters', 'rotorcraft'],
     mentions: [],
-    isDemo: true,
   },
   {
     id: 'p_09',
@@ -354,7 +346,6 @@ export const demoPosts: Post[] = [
     myReaction: null,
     hashtags: ['gripen', 'sweden', 'spotting'],
     mentions: [],
-    isDemo: true,
   },
   {
     id: 'p_10',
@@ -381,7 +372,6 @@ export const demoPosts: Post[] = [
     myReaction: null,
     hashtags: ['safety', 'aviation'],
     mentions: [],
-    isDemo: true,
   },
   {
     id: 'p_11',
@@ -417,7 +407,6 @@ export const demoPosts: Post[] = [
     myReaction: null,
     hashtags: ['eurofighter', 'luftwaffe', 'airshow'],
     mentions: [],
-    isDemo: true,
   },
   {
     id: 'p_12',
@@ -461,7 +450,6 @@ export const demoPosts: Post[] = [
     myReaction: null,
     hashtags: ['aviationhistory', 'concorde'],
     mentions: [],
-    isDemo: true,
   },
   {
     id: 'p_13',
@@ -506,7 +494,6 @@ export const demoPosts: Post[] = [
     myReaction: null,
     hashtags: ['f22raptor', 'airplanephotography'],
     mentions: [],
-    isDemo: true,
   },
   {
     id: 'p_14',
@@ -544,7 +531,6 @@ export const demoPosts: Post[] = [
     votedOptionId: null,
     hashtags: ['flightsim'],
     mentions: [],
-    isDemo: true,
   },
   {
     id: 'p_15',
@@ -572,7 +558,6 @@ export const demoPosts: Post[] = [
     myReaction: null,
     hashtags: ['helicopters', 'chinook', 'apache'],
     mentions: [],
-    isDemo: true,
   },
   {
     id: 'p_16',
@@ -615,7 +600,6 @@ export const demoPosts: Post[] = [
     myReaction: null,
     hashtags: ['whyiloveaviation'],
     mentions: [],
-    isDemo: true,
   },
   {
     id: 'p_17',
@@ -643,7 +627,6 @@ export const demoPosts: Post[] = [
     myReaction: null,
     hashtags: ['aviationnews'],
     mentions: [],
-    isDemo: true,
   },
   {
     id: 'p_18',
@@ -671,7 +654,6 @@ export const demoPosts: Post[] = [
     myReaction: null,
     hashtags: ['f16', 'afterburner', 'airshow'],
     mentions: [],
-    isDemo: true,
   },
   {
     id: 'p_19',
@@ -698,7 +680,6 @@ export const demoPosts: Post[] = [
     myReaction: null,
     hashtags: ['spotting'],
     mentions: [],
-    isDemo: true,
   },
   {
     id: 'p_20',
@@ -726,7 +707,6 @@ export const demoPosts: Post[] = [
     myReaction: null,
     hashtags: ['spotting', 'community'],
     mentions: [],
-    isDemo: true,
   },
   {
     id: 'p_21',
@@ -754,7 +734,6 @@ export const demoPosts: Post[] = [
     myReaction: null,
     hashtags: ['sr71', 'aviationhistory'],
     mentions: [],
-    isDemo: true,
   },
   {
     id: 'p_22',
@@ -781,7 +760,6 @@ export const demoPosts: Post[] = [
     myReaction: null,
     hashtags: ['flightsim', 'challenge'],
     mentions: [],
-    isDemo: true,
   },
 ]
 

@@ -14,14 +14,14 @@ if (storedTheme !== 'light') document.documentElement.classList.add('dark')
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <ToastProvider>
-      <I18nProvider>
+    <I18nProvider>
+      <ToastProvider>
         <StoreProvider>
           <BrowserRouter basename={import.meta.env.BASE_URL.replace(/\/$/, '')}>
             <App />
           </BrowserRouter>
         </StoreProvider>
-      </I18nProvider>
-    </ToastProvider>
+      </ToastProvider>
+    </I18nProvider>
   </React.StrictMode>,
 )

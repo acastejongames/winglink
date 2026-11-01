@@ -225,7 +225,7 @@ export function Lightbox({
         {images.length > 1 && (
           <button
             onClick={prev}
-            aria-label="Previous"
+            aria-label={t('common.prev')}
             className="absolute -left-12 hidden h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 sm:flex"
           >
             <ChevronLeft className="h-6 w-6" />
@@ -235,7 +235,7 @@ export function Lightbox({
         {images.length > 1 && (
           <button
             onClick={next}
-            aria-label="Next"
+            aria-label={t('common.next')}
             className="absolute -right-12 hidden h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 sm:flex"
           >
             <ChevronRight className="h-6 w-6" />
@@ -248,7 +248,7 @@ export function Lightbox({
             <button
               key={i}
               onClick={() => onIndex(i)}
-              aria-label={`Image ${i + 1}`}
+              aria-label={t('lightbox.imageN', { n: i + 1 })}
               className={`h-1.5 rounded-full transition-all ${i === index ? 'w-6 bg-sky' : 'w-1.5 bg-white/40'}`}
             />
           ))}

@@ -159,7 +159,7 @@ export default function Messages() {
         <div className={cn('flex min-h-0 flex-col', !conversation && 'hidden sm:flex')}>
           {!conversation ? (
             <div className="flex flex-1 items-center justify-center">
-              <EmptyState icon={<Users className="h-8 w-8" />} title={t('messages.pickConversation')} body={t('messages.demoNotice')} />
+              <EmptyState icon={<Users className="h-8 w-8" />} title={t('messages.pickConversation')} body={t('messages.emptyHint')} />
             </div>
           ) : (
             <>
@@ -195,7 +195,6 @@ export default function Messages() {
               </div>
 
               <div className="min-h-0 flex-1 space-y-3 overflow-y-auto px-4 py-4">
-                <p className="text-center text-[11px] text-cloud-400">{t('messages.demoNotice')}</p>
                 {conversation.messages.map((m) => (
                   <MessageBubble
                     key={m.id}

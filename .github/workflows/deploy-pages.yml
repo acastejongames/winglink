@@ -39,6 +39,7 @@ jobs:
         env:
           # GitHub Pages serves project sites from /winglink/
           VITE_BASE: /winglink/
+          OG_IMAGE: https://acastejongames.github.io/winglink/images/f22-sunset.jpg
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3

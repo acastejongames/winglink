@@ -18,7 +18,7 @@ import { demoUsers } from './demo/users'
 import { demoPosts } from './demo/posts'
 import { demoCommunities } from './demo/communities'
 import { demoNotifications, demoConversations } from './demo/social'
-import { levelFromXp, uid } from './utils'
+import { hashPassword, levelFromXp, uid } from './utils'
 import { LEVEL_BADGES, RANK_NAMES, rankForLevel } from './gamification'
 import { useI18n } from './i18n'
 import { useToast } from '@/components/ui/Toast'
@@ -156,7 +156,6 @@ interface StoreValue {
   // auth
   signIn: (email: string, password: string) => { ok: boolean; error?: string }
   signUp: (data: { email: string; username: string; displayName: string; password: string; interests: string[] }) => { ok: boolean; error?: string }
-  signInDemo: () => void
   signOut: () => void
   // users & social
   getUser: (id: string) => User | undefined
@@ -238,7 +237,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const evaluateBadges = useCallback(
     (s: PersistedState, userId: string): PersistedState => {
       const user = s.users.find((u) => u.id === userId)
-      if (!user || user.isDemo) return s
+      if (!user) return s
       const level = levelFromXp(user.xp)
       const wanted = new Set<string>(user.badges)
       const newly: string[] = []
@@ -325,8 +324,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     (email: string, password: string) => {
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { ok: false, error: t('auth.errEmail') }
       if (password.length < 8) return { ok: false, error: t('auth.errPassword') }
-      const local = stateRef.current.users.find((u) => !u.isDemo && u.email?.toLowerCase() === email.toLowerCase())
+      const local = stateRef.current.users.find((u) => u.email?.toLowerCase() === email.toLowerCase())
       if (!local) return { ok: false, error: t('auth.errNoAccount') }
+      if (local.passHash !== undefined && local.passHash !== hashPassword(password)) {
+        return { ok: false, error: t('auth.errWrongPassword') }
+      }
       patch((s) => ({ ...s, authUserId: local.id }))
       toast(t('auth.signedIn'))
       return { ok: true }
@@ -365,6 +367,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         frame: 'none',
         visibility: 'public',
         joinedAt: new Date().toISOString(),
+        passHash: hashPassword(data.password),
         stats: { posts: 0, likesReceived: 0, comments: 0, quizzesPlayed: 0, quizBestScore: 0, quizWins: 0, streak: 0 },
       }
       patch((s) => {
@@ -376,11 +379,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     },
     [patch, t, toast],
   )
-
-  const signInDemo = useCallback(() => {
-    patch((s) => ({ ...s, authUserId: 'u_alex' }))
-    toast(t('auth.signedIn'))
-  }, [patch, t, toast])
 
   const signOut = useCallback(() => {
     patch((s) => ({ ...s, authUserId: null }))
@@ -1016,7 +1014,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       lang,
       signIn,
       signUp,
-      signInDemo,
       signOut,
       getUser,
       getUserByUsername,
@@ -1060,7 +1057,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       resetData,
     }),
     [
-      state, me, theme, setTheme, lang, signIn, signUp, signInDemo, signOut, getUser, getUserByUsername,
+      state, me, theme, setTheme, lang, signIn, signUp, signOut, getUser, getUserByUsername,
       updateProfile, toggleFollow, isFollowing, sendFriendRequest, acceptFriend, declineFriend, removeFriend,
       isFriend, blockUser, unblockUser, addPost, deletePost, toggleLike, setReaction, toggleSave, sharePost,
       votePoll, addComment, toggleCommentLike, toggleJoinCommunity, createCommunity, joinChallenge,

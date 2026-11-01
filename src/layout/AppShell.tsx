@@ -60,8 +60,11 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   const sidebar = (
     <nav className="flex h-full flex-col gap-1 p-3">
-      <Link to="/home" className="mb-4 px-2 pt-1">
+      <Link to="/home" className="mb-4 flex items-center gap-2 px-2 pt-1">
         <Logo />
+        <span className="rounded-full bg-sky/15 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-sky-700 dark:text-sky">
+          {t('app.beta')}
+        </span>
       </Link>
       {navItems.map((item) => {
         const badge = item.to === '/messages' ? messages : 0

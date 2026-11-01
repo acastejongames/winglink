@@ -75,7 +75,6 @@ export default function CommunityDetail() {
                     <Lock className="h-3 w-3" /> {t('common.private')}
                   </Badge>
                 )}
-                {community.isDemo && <Badge tone="demo">{t('app.demoBadge')}</Badge>}
               </div>
               <p className="mt-0.5 text-sm text-cloud-500">
                 {t('communities.members', { n: formatCount(community.memberCount, lang) })} · {community.category} · {t('profile.joined', { date: timeAgo(community.createdAt, lang) })}
@@ -184,7 +183,7 @@ export default function CommunityDetail() {
           </div>
           {community.memberCount > members.length && (
             <p className="mt-3 text-center text-xs text-cloud-500">
-              +{formatCount(community.memberCount - members.length, lang)} {t('communities.membersTab').toLowerCase()} · {t('messages.demoNotice')}
+              +{formatCount(community.memberCount - members.length, lang)} {t('communities.membersTab').toLowerCase()}
             </p>
           )}
         </Card>

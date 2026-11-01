@@ -1,6 +1,7 @@
 import { useEffect, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes } from 'react'
 import { X } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useI18n } from '@/lib/i18n'
 
 export function Button({
   variant = 'primary',
@@ -47,13 +48,12 @@ export function Card({ className, children, hover }: { className?: string; child
   )
 }
 
-export function Badge({ children, tone = 'default', className, ...rest }: { children: ReactNode; tone?: 'default' | 'sky' | 'green' | 'amber' | 'demo' | 'red'; className?: string } & { title?: string }) {
+export function Badge({ children, tone = 'default', className, ...rest }: { children: ReactNode; tone?: 'default' | 'sky' | 'green' | 'amber' | 'red'; className?: string } & { title?: string }) {
   const tones = {
     default: 'bg-cloud-200 text-cloud-700 dark:bg-navy-700 dark:text-cloud-300',
     sky: 'bg-sky/15 text-sky-600 dark:text-sky',
     green: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400',
     amber: 'bg-amber-500/15 text-amber-600 dark:text-amber-400',
-    demo: 'bg-violet-500/15 text-violet-600 dark:text-violet-300',
     red: 'bg-red-500/15 text-red-600 dark:text-red-400',
   }
   return (
@@ -64,8 +64,9 @@ export function Badge({ children, tone = 'default', className, ...rest }: { chil
 }
 
 export function Spinner({ className }: { className?: string }) {
+  const { t } = useI18n()
   return (
-    <div className={cn('flex items-center justify-center py-10', className)} role="status" aria-label="Loading">
+    <div className={cn('flex items-center justify-center py-10', className)} role="status" aria-label={t('common.loading')}>
       <div className="h-8 w-8 animate-spin rounded-full border-2 border-cloud-300 border-t-sky dark:border-navy-600 dark:border-t-sky" />
     </div>
   )
@@ -151,6 +152,7 @@ export function Switch({ checked, onChange, label }: { checked: boolean; onChang
 }
 
 export function Modal({ open, onClose, title, children, wide }: { open: boolean; onClose: () => void; title: string; children: ReactNode; wide?: boolean }) {
+  const { t } = useI18n()
   useEffect(() => {
     if (!open) return
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
@@ -176,7 +178,7 @@ export function Modal({ open, onClose, title, children, wide }: { open: boolean;
       >
         <div className="sticky top-0 z-10 flex items-center justify-between border-b border-cloud-200 bg-white px-5 py-4 dark:border-navy-700 dark:bg-navy-800">
           <h2 className="font-display text-lg font-semibold text-navy-800 dark:text-cloud-100">{title}</h2>
-          <button onClick={onClose} aria-label="Close" className="rounded-lg p-1.5 text-cloud-500 hover:bg-cloud-100 dark:hover:bg-navy-700">
+          <button onClick={onClose} aria-label={t('common.close')} className="rounded-lg p-1.5 text-cloud-500 hover:bg-cloud-100 dark:hover:bg-navy-700">
             <X className="h-5 w-5" />
           </button>
         </div>

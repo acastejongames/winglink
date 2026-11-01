@@ -24,7 +24,6 @@ export const demoCommunities: Community[] = [
     modIds: ['u_lukas'],
     joined: true,
     createdAt: daysAgo(400),
-    isDemo: true,
     challenges: [
       { id: 'ch1', title: 'Best afterburner shot', description: 'Post your strongest burner photograph this month.', endsAt: daysAhead(12), participants: 340 },
       { id: 'ch2', title: 'Squadron history deep-dive', description: 'Write a short thread about any fighter squadron.', endsAt: daysAhead(20), participants: 118 },
@@ -52,7 +51,6 @@ export const demoCommunities: Community[] = [
     modIds: ['u_alex'],
     joined: true,
     createdAt: daysAgo(320),
-    isDemo: true,
     challenges: [
       { id: 'ch1', title: 'Variant spotting challenge', description: 'Post photos of A, B and C models — all three to complete.', endsAt: daysAhead(16), participants: 96 },
     ],
@@ -79,7 +77,6 @@ export const demoCommunities: Community[] = [
     modIds: ['u_yuki', 'u_ingrid'],
     joined: true,
     createdAt: daysAgo(360),
-    isDemo: true,
     challenges: [
       { id: 'ch1', title: 'Golden hour challenge', description: 'One frame, shot within an hour of sunset, any European airport.', endsAt: daysAhead(8), participants: 412 },
       { id: 'ch2', title: 'New airport report', description: 'Publish a first-visit spotting report with at least five photos.', endsAt: daysAhead(24), participants: 87 },
@@ -107,7 +104,6 @@ export const demoCommunities: Community[] = [
     modIds: ['u_maya'],
     joined: false,
     createdAt: daysAgo(300),
-    isDemo: true,
     challenges: [
       { id: 'ch1', title: 'Type ratings thread', description: 'Post a deep thread on any Boeing type you love.', endsAt: daysAhead(14), participants: 64 },
     ],
@@ -134,7 +130,6 @@ export const demoCommunities: Community[] = [
     modIds: ['u_omar'],
     joined: false,
     createdAt: daysAgo(290),
-    isDemo: true,
     challenges: [
       { id: 'ch1', title: 'Sharklet spotting', description: 'Capture five different operators with sharklets or winglets.', endsAt: daysAhead(18), participants: 143 },
     ],
@@ -161,7 +156,6 @@ export const demoCommunities: Community[] = [
     modIds: ['u_ingrid'],
     joined: true,
     createdAt: daysAgo(330),
-    isDemo: true,
     challenges: [
       { id: 'ch1', title: 'Cold & dark challenge', description: 'Full startup video, no skipping, any aircraft.', endsAt: daysAhead(10), participants: 276 },
       { id: 'ch2', title: 'Panel build log', description: 'Post progress photos of your cockpit build.', endsAt: daysAhead(30), participants: 158 },
@@ -189,7 +183,6 @@ export const demoCommunities: Community[] = [
     modIds: ['u_sophie'],
     joined: false,
     createdAt: daysAgo(240),
-    isDemo: true,
     challenges: [
       { id: 'ch1', title: 'Best campaign screenshot', description: 'In-game screenshot with HUD, cinematic allowed.', endsAt: daysAhead(15), participants: 201 },
     ],
@@ -216,7 +209,6 @@ export const demoCommunities: Community[] = [
     modIds: ['u_alex'],
     joined: false,
     createdAt: daysAgo(370),
-    isDemo: true,
     challenges: [
       { id: 'ch1', title: 'On-this-day thread', description: 'Post a researched thread about a date in aviation history.', endsAt: daysAhead(11), participants: 77 },
     ],
@@ -243,7 +235,6 @@ export const demoCommunities: Community[] = [
     modIds: ['u_yuki'],
     joined: false,
     createdAt: daysAgo(310),
-    isDemo: true,
     challenges: [
       { id: 'ch1', title: 'Livery of the week', description: 'Vote and photograph your favourite special livery.', endsAt: daysAhead(7), participants: 530 },
     ],
@@ -270,7 +261,6 @@ export const demoCommunities: Community[] = [
     modIds: [],
     joined: false,
     createdAt: daysAgo(200),
-    isDemo: true,
     challenges: [
       { id: 'ch1', title: 'Hover photo challenge', description: 'Capture a helicopter in the hover, any phase.', endsAt: daysAhead(13), participants: 64 },
     ],

@@ -91,6 +91,20 @@ export function daysAhead(d: number): string {
 }
 
 /**
+ * Deterministic client-side password check for local accounts.
+ * Cloud authentication replaces this when Supabase is connected.
+ */
+export function hashPassword(pw: string): string {
+  const s = 'winglink::' + pw
+  let h = 0x811c9dc5
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i)
+    h = Math.imul(h, 0x01000193)
+  }
+  return (h >>> 0).toString(16)
+}
+
+/**
  * Absolute in-app URL that respects the deployment base path
  * (e.g. '/winglink/' on GitHub Pages, '/' in local dev).
  */

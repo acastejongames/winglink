@@ -61,7 +61,8 @@ export interface User {
   frame: string
   visibility: Visibility
   joinedAt: string
-  isDemo?: boolean
+  /** Local account credential check (client-side; replaced by Supabase auth when connected). */
+  passHash?: string
   stats: UserStats
 }
 
@@ -116,7 +117,6 @@ export interface Post {
   votedOptionId?: string | null
   hashtags: string[]
   mentions: string[]
-  isDemo?: boolean
 }
 
 export interface CommunityChallenge {
@@ -144,7 +144,6 @@ export interface Community {
   joined: boolean
   pending?: boolean
   createdAt: string
-  isDemo?: boolean
   challenges: CommunityChallenge[]
 }
 

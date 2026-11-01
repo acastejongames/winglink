@@ -18,7 +18,8 @@ function baseHrefPlugin(appBase: string): Plugin {
     transformIndexHtml: {
       order: 'pre',
       handler(html) {
-        return html.replace('%BASE_HREF%', appBase)
+        const ogImage = process.env.OG_IMAGE || `${appBase}images/f22-sunset.jpg`
+        return html.replace('%BASE_HREF%', appBase).replaceAll('%OG_IMAGE%', ogImage)
       },
     },
   }

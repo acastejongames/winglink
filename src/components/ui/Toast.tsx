@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react'
 import { CheckCircle2, Info, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useI18n } from '@/lib/i18n'
 
 interface Toast {
   id: number
@@ -17,6 +18,7 @@ const ToastContext = createContext<ToastValue | null>(null)
 let nextId = 1
 
 export function ToastProvider({ children }: { children: ReactNode }) {
+  const { t: tt } = useI18n()
   const [toasts, setToasts] = useState<Toast[]>([])
 
   const toast = useCallback((message: string, kind: 'success' | 'info' = 'success') => {
@@ -46,7 +48,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             <button
               onClick={() => setToasts((prev) => prev.filter((x) => x.id !== t.id))}
               className={cn('rounded p-1 text-cloud-400 hover:text-cloud-100')}
-              aria-label="Dismiss"
+              aria-label={tt('toast.dismiss')}
             >
               <X className="h-3.5 w-3.5" />
             </button>

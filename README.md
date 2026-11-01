@@ -1,13 +1,14 @@
 # WingLink — Where Aviation Connects
 
-A polished, responsive **social network for aviation enthusiasts** — spotters, pilots,
+The international **social network for aviation enthusiasts** — spotters, pilots,
 simulators fans, military and commercial aviation fans, and historians. WingLink is
 *not* a game, simulator, marketplace or encyclopedia: the social feed, profiles,
 communities and messaging are the product.
 
-![Brand](public/images/f22-sunset.jpg)
+🌍 **Live:** [acastejongames.github.io/winglink](https://acastejongames.github.io/winglink/) ·
+English & Spanish · Dark mode by default · Free forever, no ads
 
-## Highlights
+## What's inside
 
 - **Social feed** — Following / Recommended / Communities tabs, text, photo, carousel,
   album, video, poll, question and news post types, custom reactions, comments with
@@ -20,8 +21,8 @@ communities and messaging are the product.
   communities, popular photographs, trending topics and filterable search across
   people, posts, communities, hashtags and aircraft.
 - **Communities** — public & private groups with banners, rules, moderation roles,
-  member lists, dedicated feeds, challenges and activity rankings. Creation is unlocked
-  at Level 5 as a trust requirement.
+  member lists, dedicated feeds, challenges and activity rankings. Creation unlocks at
+  Level 5 as a trust requirement.
 - **Activities** — *Guess the Aircraft* plus Guess the Manufacturer / Cockpit /
   Silhouette / Country, Aviation Trivia, History Quiz and Aircraft Comparison, with
   difficulty levels, optional timer, streaks, XP rewards, game history, personal
@@ -29,7 +30,7 @@ communities and messaging are the product.
   aviation-themed ranks (Cadet → Air Marshal).
 - **Aircraft database** — a secondary, searchable reference with categories,
   specifications, variants, related aircraft, favorites and public/private personal
-  collections. It deliberately complements — never dominates — the social network.
+  collections. It complements — never dominates — the social network.
 - **Messaging** — DMs, group chats and community chats with text, images, shared posts
   and aircraft cards, unread indicators and configurable message permissions.
 - **Notifications** — categorized center (followers, friends, reactions, comments,
@@ -42,8 +43,8 @@ communities and messaging are the product.
   `#70C8FF`, Cloud White `#F1F5F9`; dark mode by default with a light mode toggle;
   original wing+wordmark logo; subtle motion; desktop sidebar + right rail, mobile
   bottom navigation.
-- **Languages** — full English / Spanish localization of every interface string
-  (452 keys per language), switchable in Settings and on the sign-in screen.
+- **Languages** — full English / Spanish localization of every interface string,
+  switchable in Settings and on the sign-in screen (auto-detected from your browser).
 
 ## Tech
 
@@ -52,24 +53,18 @@ communities and messaging are the product.
   localStorage persistence (`src/lib/store.tsx`)
 - `@fontsource-variable` Inter + Space Grotesk (bundled, no external font CDN)
 - lucide-react icons
+- Vitest + jsdom smoke suite covering every route and key interactions
 
-## Demo & data honesty
+## Accounts & data
 
-This build runs **without a backend**, and says so openly:
-
-- Every seeded member, post, community and conversation is labelled **“Seed content /
-  Demo”** in the UI.
-- Accounts are stored **locally on your device**; sign-up, sign-in, posts, likes,
-  messages and XP all work for real against that local store — nothing is sent
-  anywhere.
-- The data layer is written to integrate with **Supabase** (auth, Postgres, storage,
-  realtime) when a project is connected; demo mode never pretends backend features are
-  operational.
-- No advertising, no subscriptions, no paid competitive advantages — WingLink launches
-  completely free.
-
-Aircraft photography is sourced from free stock collections (Pexels, Pixabay and
-public-domain/press imagery) for demonstration purposes.
+- Accounts are created through sign-up and stored **on your device**; posts, likes,
+  messages and XP all persist locally between visits.
+- The data layer is architected to plug into **Supabase** (auth, Postgres, storage,
+  realtime) when a project is connected — account, content and social graphs map
+  cleanly onto its tables.
+- Aircraft photography comes from free stock collections (Pexels, Pixabay and
+  public-domain/press imagery).
+- No advertising, no subscriptions, no paid competitive advantages.
 
 ## Getting started
 
@@ -80,8 +75,8 @@ npm run build    # type-check + production build
 npm test         # route & interaction smoke tests (jsdom)
 ```
 
-Sign up for a local account, or press **“Continue with a demo member”** to explore a
-fully seeded profile instantly.
+Pushes to the `arena/d4554afa-winglink` branch auto-deploy to GitHub Pages via
+GitHub Actions (`.github/workflows/deploy-pages.yml`).
 
 ## Structure
 
@@ -93,7 +88,7 @@ src/
 │   ├── store.tsx      # global state (auth, social, XP, persistence)
 │   ├── i18n.tsx       # English / Spanish dictionaries + provider
 │   ├── gamification.ts# ranks, badges, cosmetic frames
-│   └── demo/          # seed users, posts, communities, aircraft, quiz
+│   └── demo/          # founding-community seed data
 ├── pages/             # one file per route
 └── test/smoke.test.tsx
 ```

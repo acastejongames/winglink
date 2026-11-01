@@ -2,8 +2,8 @@ import type { User } from '../types'
 import { daysAgo } from '../utils'
 
 /**
- * Seeded demo members. Every seeded profile is flagged `isDemo` so the UI can
- * clearly distinguish seed content from real member-generated content.
+ * Seeded founding members of the community. They have no credentials — only
+ * accounts created through sign-up can be signed into.
  */
 export const demoUsers: User[] = [
   {
@@ -28,7 +28,6 @@ export const demoUsers: User[] = [
     frame: 'sky',
     visibility: 'public',
     joinedAt: daysAgo(420),
-    isDemo: true,
     stats: { posts: 214, likesReceived: 9820, comments: 1430, quizzesPlayed: 64, quizBestScore: 10, quizWins: 21, streak: 12 },
   },
   {
@@ -52,7 +51,6 @@ export const demoUsers: User[] = [
     frame: 'golden',
     visibility: 'public',
     joinedAt: daysAgo(380),
-    isDemo: true,
     stats: { posts: 156, likesReceived: 41200, comments: 5300, quizzesPlayed: 48, quizBestScore: 10, quizWins: 15, streak: 8 },
   },
   {
@@ -76,7 +74,6 @@ export const demoUsers: User[] = [
     frame: 'sky',
     visibility: 'public',
     joinedAt: daysAgo(300),
-    isDemo: true,
     stats: { posts: 189, likesReceived: 7600, comments: 2100, quizzesPlayed: 71, quizBestScore: 9, quizWins: 18, streak: 5 },
   },
   {
@@ -100,7 +97,6 @@ export const demoUsers: User[] = [
     frame: 'carbon',
     visibility: 'public',
     joinedAt: daysAgo(260),
-    isDemo: true,
     stats: { posts: 98, likesReceived: 5400, comments: 1200, quizzesPlayed: 30, quizBestScore: 8, quizWins: 6, streak: 3 },
   },
   {
@@ -124,7 +120,6 @@ export const demoUsers: User[] = [
     frame: 'none',
     visibility: 'private',
     joinedAt: daysAgo(140),
-    isDemo: true,
     stats: { posts: 47, likesReceived: 2100, comments: 480, quizzesPlayed: 12, quizBestScore: 7, quizWins: 2, streak: 1 },
   },
   {
@@ -148,7 +143,6 @@ export const demoUsers: User[] = [
     frame: 'sky',
     visibility: 'public',
     joinedAt: daysAgo(210),
-    isDemo: true,
     stats: { posts: 76, likesReceived: 3900, comments: 890, quizzesPlayed: 44, quizBestScore: 9, quizWins: 11, streak: 6 },
   },
   {
@@ -172,7 +166,6 @@ export const demoUsers: User[] = [
     frame: 'golden',
     visibility: 'public',
     joinedAt: daysAgo(390),
-    isDemo: true,
     stats: { posts: 132, likesReceived: 15400, comments: 3600, quizzesPlayed: 55, quizBestScore: 10, quizWins: 17, streak: 9 },
   },
   {
@@ -196,7 +189,6 @@ export const demoUsers: User[] = [
     frame: 'sky',
     visibility: 'public',
     joinedAt: daysAgo(350),
-    isDemo: true,
     stats: { posts: 241, likesReceived: 28900, comments: 4100, quizzesPlayed: 39, quizBestScore: 8, quizWins: 9, streak: 4 },
   },
   {
@@ -220,7 +212,6 @@ export const demoUsers: User[] = [
     frame: 'carbon',
     visibility: 'public',
     joinedAt: daysAgo(240),
-    isDemo: true,
     stats: { posts: 118, likesReceived: 6100, comments: 1500, quizzesPlayed: 52, quizBestScore: 9, quizWins: 13, streak: 7 },
   },
   {
@@ -244,7 +235,6 @@ export const demoUsers: User[] = [
     frame: 'sky',
     visibility: 'public',
     joinedAt: daysAgo(180),
-    isDemo: true,
     stats: { posts: 87, likesReceived: 4300, comments: 970, quizzesPlayed: 22, quizBestScore: 7, quizWins: 4, streak: 2 },
   },
 ]
