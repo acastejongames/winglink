@@ -70,5 +70,11 @@ export default defineConfig({
     environment: 'jsdom',
     include: ['src/**/*.test.{ts,tsx}'],
     css: false,
+    // Tests always run the local encrypted-vault mode, even if a developer
+    // (or CI job env) has Supabase credentials in the environment.
+    env: {
+      VITE_SUPABASE_URL: '',
+      VITE_SUPABASE_ANON_KEY: '',
+    },
   },
 })

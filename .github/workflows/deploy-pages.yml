@@ -39,6 +39,10 @@ jobs:
 
       - name: Run tests
         run: npm test
+        env:
+          # Tests always exercise the local vault mode.
+          VITE_SUPABASE_URL: ''
+          VITE_SUPABASE_ANON_KEY: ''
 
       - name: Verify Supabase backend
         if: env.VITE_SUPABASE_URL != ''
