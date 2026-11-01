@@ -48,7 +48,7 @@ export function UserAvatar({ user, size = 'md', className, ring }: { user?: User
       style={!user || failed ? { background: hashColor(user?.username ?? name) } : undefined}
       aria-hidden={!user}
     >
-      {user && !failed ? (
+      {user && user.avatar && !failed ? (
         <img
           src={user.avatar}
           alt=""

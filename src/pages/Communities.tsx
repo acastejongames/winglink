@@ -29,7 +29,7 @@ export default function Communities() {
   const [createOpen, setCreateOpen] = useState(false)
 
   const level = me ? levelFromXp(me.xp) : 1
-  const canCreate = level >= 5
+  const canCreate = level >= 3
 
   const mine = state.communities.filter((c) => c.joined)
   const query = q.trim().toLowerCase()
@@ -83,7 +83,7 @@ export default function Communities() {
       {(tab === 'mine' ? mine : browse).length === 0 ? (
         <EmptyState
           icon={<Compass className="h-8 w-8" />}
-          title={tab === 'mine' ? t('home.emptyCommunities') : t('explore.noResults', { q })}
+          title={tab === 'mine' ? t('home.emptyCommunities') : q ? t('explore.noResults', { q }) : t('communities.empty')}
           action={
             tab === 'mine' ? (
               <Button onClick={() => setTab('browse')}>{t('communities.browse')}</Button>

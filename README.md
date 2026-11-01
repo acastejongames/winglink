@@ -88,7 +88,7 @@ src/
 │   ├── store.tsx      # global state (auth, social, XP, persistence)
 │   ├── i18n.tsx       # English / Spanish dictionaries + provider
 │   ├── gamification.ts# ranks, badges, cosmetic frames
-│   └── demo/          # founding-community seed data
+│   └── content/        # aircraft DB, quiz questions, seasonal challenges
 ├── pages/             # one file per route
 └── test/smoke.test.tsx
 ```

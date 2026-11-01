@@ -11,7 +11,7 @@ import { PostCard } from '@/components/feed/PostCard'
 import { UserAvatar } from '@/components/UserAvatar'
 import { Badge, Button, Card, EmptyState, Modal, Spinner, Tabs, Textarea, Input, Select, AvatarFrame } from '@/components/ui/Primitives'
 import { BlockModal, ReportModal, Lightbox, ShareModal } from '@/components/modals'
-import { aircraftMap } from '@/lib/demo/aircraft'
+import { aircraftMap } from '@/lib/content/aircraft'
 import { BADGE_MAP, RANK_NAMES, rankForLevel } from '@/lib/gamification'
 import { appUrl, cn, copyText, formatCount, levelProgress, timeAgo } from '@/lib/utils'
 
@@ -466,7 +466,7 @@ function EditProfileModal({ open, onClose }: { open: boolean; onClose: () => voi
   const [cover, setCover] = useState(me?.cover ?? '')
 
   if (!me) return null
-  const avatarOptions = ['images/f22-sky.jpg', 'images/f35-blue.jpg', 'images/concorde-sunset.jpg', 'images/gripen.jpg', 'images/b787.jpg', me.avatar]
+  const avatarOptions = ['images/f22-sky.jpg', 'images/f35-blue.jpg', 'images/concorde-sunset.jpg', 'images/gripen.jpg', 'images/b787.jpg', me.avatar].filter(Boolean)
   const coverOptions = ['images/f22-sunset.jpg', 'images/a350.jpg', 'images/cockpit-airliner.jpg', 'images/spitfire.jpg', 'images/b2-moon.jpg', 'images/chinook.jpg', me.cover]
 
   return (

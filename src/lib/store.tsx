@@ -14,16 +14,13 @@ import type {
   ThemeMode,
   User,
 } from './types'
-import { demoUsers } from './demo/users'
-import { demoPosts } from './demo/posts'
-import { demoCommunities } from './demo/communities'
-import { demoNotifications, demoConversations } from './demo/social'
 import { hashPassword, levelFromXp, uid } from './utils'
 import { LEVEL_BADGES, RANK_NAMES, rankForLevel } from './gamification'
 import { useI18n } from './i18n'
 import { useToast } from '@/components/ui/Toast'
 
-const STORAGE_KEY = 'winglink.state.v1'
+// v2: public launch — starts from a clean slate (v1 seed data is never loaded)
+const STORAGE_KEY = 'winglink.state.v2'
 
 export interface ReportEntry {
   id: string
@@ -89,21 +86,19 @@ const defaultPrefs: Prefs = {
 function freshState(): PersistedState {
   return {
     authUserId: null,
-    users: demoUsers,
-    posts: demoPosts,
-    communities: demoCommunities,
-    conversations: demoConversations,
-    notifications: demoNotifications,
-    following: ['u_alex', 'u_maya', 'u_james', 'u_yuki', 'u_sophie'],
-    friends: ['u_james'],
-    incomingRequests: ['u_ingrid'],
+    users: [],
+    posts: [],
+    communities: [],
+    conversations: [],
+    notifications: [],
+    following: [],
+    friends: [],
+    incomingRequests: [],
     outgoingRequests: [],
     blocked: [],
     reports: [],
-    favoriteAircraft: ['f35', 'concorde'],
-    collections: [
-      { id: 'col1', name: 'Dream machines', visibility: 'public', aircraftIds: ['f22', 'sr71'], createdAt: new Date().toISOString() },
-    ],
+    favoriteAircraft: [],
+    collections: [],
     quizRecords: [],
     claimedChallenges: [],
     progress: { posts: 0, comments: 0, quizzes: 0, xpEarned: 0 },
@@ -351,7 +346,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         email: data.email,
         displayName: data.displayName.trim(),
         bio: '',
-        avatar: 'images/f22-sky.jpg',
+        avatar: '',
         cover: 'images/f22-sunset.jpg',
         country: '',
         countryCode: '',
@@ -949,18 +944,19 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   // ── Gamification ───────────────────────────────────────────────────
   const addQuizResult = useCallback(
     (mode: QuizMode, difficulty: Difficulty, score: number, total: number, xp: number) => {
-      const record: QuizRecord = {
-        id: uid('q'),
-        mode,
-        difficulty,
-        score,
-        total,
-        xp,
-        playedAt: new Date().toISOString(),
-      }
       patch((s) => {
         const user = s.users.find((u) => u.id === s.authUserId)
         if (!user) return s
+        const record: QuizRecord = {
+          id: uid('q'),
+          userId: user.id,
+          mode,
+          difficulty,
+          score,
+          total,
+          xp,
+          playedAt: new Date().toISOString(),
+        }
         let next: PersistedState = {
           ...s,
           quizRecords: [record, ...s.quizRecords].slice(0, 60),

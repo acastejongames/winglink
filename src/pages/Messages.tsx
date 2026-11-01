@@ -7,7 +7,7 @@ import { useI18n } from '@/lib/i18n'
 import { UserAvatar } from '@/components/UserAvatar'
 import { Badge, Button, Card, EmptyState, Select } from '@/components/ui/Primitives'
 import { RichText } from '@/components/RichText'
-import { aircraftMap } from '@/lib/demo/aircraft'
+import { aircraftMap } from '@/lib/content/aircraft'
 import { cn, fileToCompressedDataUrl, timeAgo } from '@/lib/utils'
 import { useToast } from '@/components/ui/Toast'
 

@@ -16,9 +16,83 @@ beforeAll(() => {
   window.matchMedia =
     window.matchMedia ||
     ((() => ({ matches: false, addListener: () => {}, removeListener: () => {} })) as unknown as typeof window.matchMedia)
-  // seed a signed-in demo member so protected routes render
-  localStorage.setItem('winglink.state.v1', JSON.stringify({ authUserId: 'u_alex' }))
 })
+
+/** Sign in as a locally-created member with one photo post and a community. */
+function signInFixture() {
+  const now = new Date().toISOString()
+  localStorage.setItem(
+    'winglink.state.v2',
+    JSON.stringify({
+      authUserId: 'u_me',
+      users: [
+        {
+          id: 'u_me',
+          username: 'tester',
+          email: 'tester@example.com',
+          displayName: 'Test Pilot',
+          bio: 'Testing the ramp.',
+          avatar: '',
+          cover: 'images/f22-sunset.jpg',
+          country: 'Spain',
+          countryCode: 'ES',
+          interests: ['spotting'],
+          identityTags: ['Spotter'],
+          favoriteAircraft: [],
+          followers: 0,
+          following: 0,
+          friends: 0,
+          postsCount: 1,
+          xp: 150,
+          badges: [],
+          frame: 'none',
+          visibility: 'public',
+          joinedAt: now,
+          stats: { posts: 1, likesReceived: 0, comments: 0, quizzesPlayed: 0, quizBestScore: 0, quizWins: 0, streak: 0 },
+        },
+      ],
+      posts: [
+        {
+          id: 'p_test',
+          authorId: 'u_me',
+          type: 'image',
+          text: 'Beautiful morning over the field. #spotting',
+          createdAt: now,
+          images: ['images/f22-sky.jpg'],
+          likes: 0,
+          shares: 0,
+          comments: [],
+          reactions: {},
+          hashtags: ['spotting'],
+          mentions: [],
+          visibility: 'public',
+        },
+      ],
+      communities: [
+        {
+          id: 'c_test',
+          slug: 'test-forum',
+          name: 'Test Forum',
+          avatar: 'images/f35.jpg',
+          banner: 'images/f22-sunset.jpg',
+          description: 'Fixture community.',
+          rules: [],
+          category: 'spotting',
+          visibility: 'public',
+          memberCount: 1,
+          memberIds: ['u_me'],
+          adminIds: ['u_me'],
+          modIds: [],
+          joined: true,
+          createdAt: now,
+          challenges: [],
+        },
+      ],
+    }),
+  )
+}
+
+signInFixture()
 
 let container: HTMLDivElement
 let root: Root | null = null
@@ -56,12 +130,12 @@ const routes: { path: string; expect: RegExp }[] = [
   { path: '/activities', expect: /Activities|Actividades/ },
   { path: '/activities/aircraft', expect: /Guess the Aircraft|Adivina la aeronave/ },
   { path: '/communities', expect: /Communities|Comunidades/ },
-  { path: '/communities/fighter-aviation', expect: /Fighter Aviation/ },
+  { path: '/communities/test-forum', expect: /Test Forum/ },
   { path: '/messages', expect: /Messages|Mensajes/ },
   { path: '/aircraft', expect: /Aircraft|Aeronaves/ },
   { path: '/aircraft/f35', expect: /F-35 Lightning II/ },
-  { path: '/profile/spotter_alex', expect: /Alex Rivera/ },
-  { path: '/profile/me', expect: /Alex Rivera/ },
+  { path: '/profile/tester', expect: /Test Pilot/ },
+  { path: '/profile/me', expect: /Test Pilot/ },
   { path: '/notifications', expect: /Notifications|Notificaciones/ },
   { path: '/settings', expect: /Settings|Ajustes/ },
   { path: '/search?q=concorde', expect: /Concorde/ },
@@ -79,13 +153,13 @@ describe('WingLink route smoke tests', () => {
   }
 
   it('renders the auth screen when signed out', () => {
-    localStorage.removeItem('winglink.state.v1')
+    localStorage.removeItem('winglink.state.v2')
     const el = renderRoute('/auth')
     expect(el.textContent ?? '').toMatch(/Where Aviation Connects|Donde la aviación conecta/i)
   })
 
   it('starts a Guess the Aircraft round', () => {
-    localStorage.setItem('winglink.state.v1', JSON.stringify({ authUserId: 'u_alex' }))
+    signInFixture()
     const el = renderRoute('/activities/aircraft')
     const startBtn = Array.from(el.querySelectorAll('button')).find((b) => /Start round|Empezar/i.test(b.textContent ?? ''))
     expect(startBtn).toBeTruthy()
@@ -97,6 +171,7 @@ describe('WingLink route smoke tests', () => {
   })
 
   it('opens a post with comments in the feed', () => {
+    signInFixture()
     const el = renderRoute('/home')
     const commentBtn = Array.from(el.querySelectorAll('button')).find((b) => /Comment|Comentar/.test(b.textContent ?? ''))
     expect(commentBtn).toBeTruthy()
@@ -105,6 +180,7 @@ describe('WingLink route smoke tests', () => {
   })
 
   it('feed is not covered by overlays; image lightbox opens and closes with the X', () => {
+    signInFixture()
     const el = renderRoute('/home')
     // Regression: posts with photos used to mount a permanent full-screen
     // lightbox overlay that could not be dismissed.

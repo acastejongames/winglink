@@ -1,4 +1,4 @@
-import type { GlobalLeaderRow, QuizQuestion, SeasonalChallenge } from '../types'
+import type { QuizQuestion, SeasonalChallenge } from '../types'
 import { daysAhead } from '../utils'
 
 export const quizQuestions: QuizQuestion[] = [
@@ -89,39 +89,3 @@ export const seasonalChallenges: SeasonalChallenge[] = [
   { id: 'sc3', title: 'Conversation Captain', description: 'Write 15 comments across the feed.', target: 15, metric: 'comments', rewardXp: 120 },
   { id: 'sc4', title: 'Climb 1,000 XP', description: 'Earn 1,000 XP in any legitimate way.', target: 1000, metric: 'xp', rewardXp: 100 },
 ]
-
-export const demoLeaderboards: Record<string, GlobalLeaderRow[]> = {
-  global: [
-    { userId: 'u_maya', score: 12840 },
-    { userId: 'u_james', score: 11220 },
-    { userId: 'u_yuki', score: 10480 },
-    { userId: 'u_alex', score: 9870 },
-    { userId: 'u_diego', score: 9340 },
-    { userId: 'u_lukas', score: 8610 },
-    { userId: 'u_sophie', score: 7920 },
-    { userId: 'u_ingrid', score: 7110 },
-    { userId: 'u_priya', score: 6350 },
-  ],
-  weekly: [
-    { userId: 'u_yuki', score: 1240 },
-    { userId: 'u_alex', score: 1185 },
-    { userId: 'u_diego', score: 1090 },
-    { userId: 'u_lukas', score: 980 },
-    { userId: 'u_maya', score: 940 },
-    { userId: 'u_ingrid', score: 870 },
-    { userId: 'u_james', score: 810 },
-    { userId: 'u_sophie', score: 760 },
-    { userId: 'u_priya', score: 640 },
-  ],
-  monthly: [
-    { userId: 'u_maya', score: 4620 },
-    { userId: 'u_james', score: 4210 },
-    { userId: 'u_alex', score: 3980 },
-    { userId: 'u_yuki', score: 3870 },
-    { userId: 'u_diego', score: 3510 },
-    { userId: 'u_lukas', score: 3120 },
-    { userId: 'u_sophie', score: 2890 },
-    { userId: 'u_priya', score: 2310 },
-    { userId: 'u_ingrid', score: 2180 },
-  ],
-}

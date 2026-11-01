@@ -7,13 +7,13 @@ import { useToast } from '../ui/Toast'
 import { UserAvatar } from '../UserAvatar'
 import { Button } from '../ui/Primitives'
 import { cn, fileToCompressedDataUrl, uid } from '@/lib/utils'
-import { trendingHashtags } from '@/lib/demo/posts'
+import { topHashtags } from '@/lib/content/trending'
 
 const MAX_LEN = 1000
 
 export function PostComposer({ communityId }: { communityId?: string }) {
   const { t, lang } = useI18n()
-  const { me, addPost } = useStore()
+  const { me, addPost, state } = useStore()
   const { toast } = useToast()
   const [text, setText] = useState('')
   const [images, setImages] = useState<string[]>([])
@@ -31,7 +31,7 @@ export function PostComposer({ communityId }: { communityId?: string }) {
   if (!me) return null
 
   const hashtagsInText = (text.match(/#[\p{L}\p{N}_]+/gu) || []).map((m) => m.slice(1).toLowerCase())
-  const suggestions = trendingHashtags
+  const suggestions = topHashtags(state.posts, 8)
     .filter((h) => !hashtagsInText.includes(h.tag.toLowerCase()))
     .slice(0, 4)
 

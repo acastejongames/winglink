@@ -8,9 +8,9 @@ import { PostComposer } from '@/components/feed/PostComposer'
 import { UserAvatar } from '@/components/UserAvatar'
 import { Badge, Button, Card, EmptyState, Tabs } from '@/components/ui/Primitives'
 import { SectionHeader } from '@/components/RichText'
-import { trendingHashtags, trendingTopics } from '@/lib/demo/posts'
+import { topHashtags } from '@/lib/content/trending'
 import { formatCount } from '@/lib/utils'
-import { seasonalChallenges } from '@/lib/demo/quiz'
+import { seasonalChallenges } from '@/lib/content/quiz'
 import { rankForLevel, RANK_NAMES } from '@/lib/gamification'
 
 export default function Home() {
@@ -40,6 +40,7 @@ export default function Home() {
     .filter((u) => u.id !== me?.id && !isFollowing(u.id) && !state.blocked.includes(u.id))
     .slice(0, 5)
   const incoming = state.incomingRequests.map((id) => getUser(id)).filter(Boolean)
+  const trendTags = useMemo(() => topHashtags(state.posts, 6), [state.posts])
 
   return (
     <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
@@ -120,6 +121,7 @@ export default function Home() {
           </Card>
         )}
 
+        {suggested.length > 0 && (
         <Card className="p-4">
           <SectionHeader title={t('explore.recommendedUsers')} icon={<Users className="h-4 w-4 text-sky" />} />
           <div className="space-y-3.5">
@@ -139,11 +141,13 @@ export default function Home() {
             ))}
           </div>
         </Card>
+        )}
 
+        {trendTags.length > 0 && (
         <Card className="p-4">
           <SectionHeader title={t('explore.popularHashtags')} icon={<TrendingUp className="h-4 w-4 text-sky" />} />
           <div className="space-y-2.5">
-            {trendingHashtags.slice(0, 6).map((h, i) => (
+            {trendTags.slice(0, 6).map((h, i) => (
               <Link key={h.tag} to={`/search?q=%23${h.tag}`} className="flex items-center gap-3 text-sm hover:opacity-80">
                 <span className="font-display font-bold text-cloud-300 dark:text-navy-600">{i + 1}</span>
                 <span className="flex-1 font-medium text-navy-700 dark:text-cloud-200">#{h.tag}</span>
@@ -152,6 +156,7 @@ export default function Home() {
             ))}
           </div>
         </Card>
+        )}
 
         <Card className="p-4">
           <SectionHeader title={t('activities.seasonal')} icon={<Sparkles className="h-4 w-4 text-sky" />} />
@@ -177,18 +182,6 @@ export default function Home() {
           </Link>
         </Card>
 
-        <Card className="p-4">
-          <SectionHeader title={t('explore.trendingTopics')} />
-          <div className="flex flex-wrap gap-2">
-            {trendingTopics.slice(0, 4).map((topic) => (
-              <Link key={topic.title} to={`/search?q=${encodeURIComponent(topic.title)}`}>
-                <Badge tone={topic.hot ? 'sky' : 'default'}>
-                  {topic.hot && '🔥'} {topic.title}
-                </Badge>
-              </Link>
-            ))}
-          </div>
-        </Card>
 
         <footer className="px-1 pb-6 text-center text-[11px] leading-relaxed text-cloud-400">
           <p className="font-display font-semibold text-cloud-500 dark:text-cloud-400">WingLink · {t('footer.tagline')}</p>

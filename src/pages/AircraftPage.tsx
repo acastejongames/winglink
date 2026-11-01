@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Bookmark, FolderPlus, Plane, Search, Star } from 'lucide-react'
-import { aircraft, categoryLabels } from '@/lib/demo/aircraft'
+import { aircraft, categoryLabels } from '@/lib/content/aircraft'
 import { useStore } from '@/lib/store'
 import { useI18n } from '@/lib/i18n'
 import { Badge, Button, Card, EmptyState, Modal, Select } from '@/components/ui/Primitives'

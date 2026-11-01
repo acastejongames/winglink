@@ -291,6 +291,7 @@ export type QuizQuestion = ImageQuestion | TextQuestion | ComparisonQuestion
 
 export interface QuizRecord {
   id: ID
+  userId: ID
   mode: QuizMode
   difficulty: Difficulty
   score: number

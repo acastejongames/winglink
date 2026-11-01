@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, FolderPlus, Share2, Star } from 'lucide-react'
-import { aircraftMap, aircraft as allAircraft, categoryLabels } from '@/lib/demo/aircraft'
+import { aircraftMap, aircraft as allAircraft, categoryLabels } from '@/lib/content/aircraft'
 import { useStore } from '@/lib/store'
 import { useI18n } from '@/lib/i18n'
 import { Badge, Button, Card, EmptyState, Modal, Select, Spinner } from '@/components/ui/Primitives'

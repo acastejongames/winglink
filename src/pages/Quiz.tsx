@@ -4,7 +4,7 @@ import {
   ArrowLeft, CheckCircle2, Clock, Flame, Play, RotateCcw, Timer, Trophy, XCircle,
 } from 'lucide-react'
 import type { Difficulty, QuizMode, QuizQuestion } from '@/lib/types'
-import { quizQuestions } from '@/lib/demo/quiz'
+import { quizQuestions } from '@/lib/content/quiz'
 import { useStore } from '@/lib/store'
 import { useI18n } from '@/lib/i18n'
 import { useToast } from '@/components/ui/Toast'
@@ -12,7 +12,7 @@ import { Badge, Button, Card, EmptyState, Tabs } from '@/components/ui/Primitive
 import { cn, timeAgo } from '@/lib/utils'
 import { UserAvatar } from '@/components/UserAvatar'
 import { RANK_NAMES, rankForLevel } from '@/lib/gamification'
-import { demoLeaderboards } from '@/lib/demo/quiz'
+
 
 const MODE_LABEL: Record<QuizMode, string> = {
   aircraft: 'activities.guessAircraft',
@@ -146,13 +146,19 @@ export default function Quiz() {
   }, [state.quizRecords])
 
   const leaderboard = useMemo(() => {
-    const rows = demoLeaderboards.weekly.filter((r) => r.userId !== me?.id).map((r) => ({ ...r, isMe: false }))
-    if (me) {
-      const myScore = state.quizRecords.reduce((a, r) => a + r.xp, 0)
-      rows.push({ userId: me.id, score: myScore, isMe: true })
-    }
-    return rows.sort((a, b) => b.score - a.score).slice(0, 10)
-  }, [me, state.quizRecords])
+    const cutoff = Date.now() - 7 * 86400000
+    return state.users
+      .map((u) => ({
+        userId: u.id,
+        score: state.quizRecords
+          .filter((r) => r.userId === u.id && +new Date(r.playedAt) >= cutoff)
+          .reduce((a, r) => a + r.xp, 0),
+        isMe: u.id === me?.id,
+      }))
+      .filter((r) => r.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 10)
+  }, [me, state.users, state.quizRecords])
 
   if (!Object.keys(MODE_LABEL).includes(mode)) {
     return <EmptyState title={t('error.notFound')} body={t('error.notFoundBody')} action={<Button onClick={() => navigate('/activities')}>{t('common.back')}</Button>} />
@@ -269,6 +275,9 @@ export default function Quiz() {
           <h2 className="mb-3 flex items-center gap-2 font-display font-semibold">
             <Trophy className="h-4 w-4 text-sky" /> {t('activities.leaderboards')} · {t('activities.leaderboardWeekly')}
           </h2>
+          {leaderboard.length === 0 && (
+            <EmptyState icon={<Trophy className="h-8 w-8" />} title={t('activities.leaderboardEmpty')} />
+          )}
           <ol className="space-y-2">
             {leaderboard.map((row, i) => {
               const user = state.users.find((u) => u.id === row.userId)

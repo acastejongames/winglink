@@ -7,9 +7,9 @@ import { PostCard } from '@/components/feed/PostCard'
 import { UserAvatar } from '@/components/UserAvatar'
 import { Badge, Button, Card, EmptyState, Input, Tabs } from '@/components/ui/Primitives'
 import { SectionHeader } from '@/components/RichText'
-import { trendingHashtags, trendingTopics } from '@/lib/demo/posts'
-import { aircraft } from '@/lib/demo/aircraft'
-import { categoryLabels } from '@/lib/demo/aircraft'
+import { topHashtags } from '@/lib/content/trending'
+import { aircraft } from '@/lib/content/aircraft'
+import { categoryLabels } from '@/lib/content/aircraft'
 import { formatCount } from '@/lib/utils'
 
 type Filter = 'all' | 'users' | 'posts' | 'communities' | 'hashtags' | 'aircraft'
@@ -38,7 +38,7 @@ export default function Explore() {
     const communities = state.communities.filter(
       (c) => c.name.toLowerCase().includes(query) || c.description.toLowerCase().includes(query) || c.category.toLowerCase().includes(query),
     )
-    const hashtags = trendingHashtags.filter((h) => h.tag.toLowerCase().includes(query))
+    const hashtags = topHashtags(state.posts, 24).filter((h) => h.tag.toLowerCase().includes(query))
     const aircraftResults = aircraft.filter(
       (a) => a.name.toLowerCase().includes(query) || a.manufacturer.toLowerCase().includes(query) || a.country.toLowerCase().includes(query),
     )
@@ -74,6 +74,7 @@ export default function Explore() {
   const recommendedUsers = state.users.filter((u) => u.id !== me?.id && !isFollowing(u.id) && !state.blocked.includes(u.id)).slice(0, 4)
   const recommendedCommunities = state.communities.filter((c) => !c.joined).slice(0, 4)
   const recentlyActive = state.communities.filter((c) => c.joined || c.memberCount > 20000).slice(0, 5)
+  const topTags = topHashtags(state.posts, 12)
   const hasResults = filtered && (filtered.users.length + filtered.posts.length + filtered.communities.length + filtered.hashtags.length + filtered.aircraft.length) > 0
 
   return (
@@ -189,14 +190,19 @@ export default function Explore() {
           {/* trending posts */}
           <section>
             <SectionHeader title={t('explore.trendingPosts')} icon={<TrendingUp className="h-4 w-4 text-sky" />} />
-            <div className="space-y-4">
-              {trendingPosts.map((p) => (
-                <PostCard key={p.id} post={p} showCommunity />
-              ))}
-            </div>
+            {trendingPosts.length === 0 ? (
+              <EmptyState icon={<TrendingUp className="h-8 w-8" />} title={t('explore.beFirst')} />
+            ) : (
+              <div className="space-y-4">
+                {trendingPosts.map((p) => (
+                  <PostCard key={p.id} post={p} showCommunity />
+                ))}
+              </div>
+            )}
           </section>
 
           {/* popular photographs */}
+          {photoPosts.length > 0 && (
           <section>
             <SectionHeader title={t('explore.popularPhotos')} icon={<Images className="h-4 w-4 text-sky" />} />
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
@@ -210,7 +216,9 @@ export default function Explore() {
               ))}
             </div>
           </section>
+          )}
 
+          {(recommendedUsers.length > 0 || recommendedCommunities.length > 0) && (
           <div className="grid gap-6 lg:grid-cols-2">
             {/* recommended users */}
             <Card className="p-4">
@@ -246,34 +254,25 @@ export default function Explore() {
               </div>
             </Card>
           </div>
+          )}
 
-          {/* hashtags + topics */}
-          <div className="grid gap-6 lg:grid-cols-2">
-            <Card className="p-4">
-              <SectionHeader title={t('explore.popularHashtags')} icon={<Hash className="h-4 w-4 text-sky" />} />
-              <div className="grid grid-cols-2 gap-2">
-                {trendingHashtags.map((h) => (
-                  <Link key={h.tag} to={`/search?q=%23${h.tag}`} className="flex items-center justify-between rounded-xl bg-cloud-100 px-3 py-2.5 text-sm hover:bg-sky/10 dark:bg-navy-900/60">
-                    <span className="font-medium">#{h.tag}</span>
-                    <span className="text-xs text-cloud-500">{formatCount(h.posts, lang)}</span>
-                  </Link>
-                ))}
-              </div>
-            </Card>
-            <Card className="p-4">
-              <SectionHeader title={t('explore.trendingTopics')} />
-              <div className="space-y-2">
-                {trendingTopics.map((topic) => (
-                  <Link key={topic.title} to={`/search?q=${encodeURIComponent(topic.title)}`} className="flex items-center justify-between rounded-xl px-3 py-2.5 text-sm hover:bg-cloud-100 dark:hover:bg-navy-700">
-                    <span className="font-medium">{topic.hot && <span className="mr-1">🔥</span>}{topic.title}</span>
-                    <span className="text-xs text-cloud-500">{formatCount(topic.posts, lang)}</span>
-                  </Link>
-                ))}
-              </div>
-            </Card>
-          </div>
+          {/* popular hashtags */}
+          {topTags.length > 0 && (
+          <Card className="p-4">
+            <SectionHeader title={t('explore.popularHashtags')} icon={<Hash className="h-4 w-4 text-sky" />} />
+            <div className="grid grid-cols-2 gap-2">
+              {topTags.map((h) => (
+                <Link key={h.tag} to={`/search?q=%23${h.tag}`} className="flex items-center justify-between rounded-xl bg-cloud-100 px-3 py-2.5 text-sm hover:bg-sky/10 dark:bg-navy-900/60">
+                  <span className="font-medium">#{h.tag}</span>
+                  <span className="text-xs text-cloud-500">{formatCount(h.posts, lang)}</span>
+                </Link>
+              ))}
+            </div>
+          </Card>
+          )}
 
           {/* recently active communities */}
+          {recentlyActive.length > 0 && (
           <Card className="p-4">
             <SectionHeader title={t('explore.recentCommunities')} />
             <div className="flex gap-3 overflow-x-auto pb-1 no-scrollbar">
@@ -291,6 +290,7 @@ export default function Explore() {
               ))}
             </div>
           </Card>
+          )}
         </div>
       )}
     </div>

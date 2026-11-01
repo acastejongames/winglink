@@ -7,8 +7,8 @@ import { PostCard } from '@/components/feed/PostCard'
 import { UserAvatar } from '@/components/UserAvatar'
 import { Badge, Button, Card, EmptyState, Tabs } from '@/components/ui/Primitives'
 import { SectionHeader } from '@/components/RichText'
-import { aircraft } from '@/lib/demo/aircraft'
-import { trendingHashtags } from '@/lib/demo/posts'
+import { aircraft } from '@/lib/content/aircraft'
+import { topHashtags } from '@/lib/content/trending'
 import { formatCount } from '@/lib/utils'
 import { useState } from 'react'
 
@@ -40,7 +40,7 @@ export default function SearchPage() {
     const communities = state.communities.filter(
       (c) => c.name.toLowerCase().includes(query) || c.description.toLowerCase().includes(query),
     )
-    const hashtags = trendingHashtags.filter((h) => h.tag.toLowerCase().includes(query))
+    const hashtags = topHashtags(state.posts, 24).filter((h) => h.tag.toLowerCase().includes(query))
     const planes = aircraft.filter(
       (a) => a.name.toLowerCase().includes(query) || a.manufacturer.toLowerCase().includes(query),
     )

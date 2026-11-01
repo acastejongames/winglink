@@ -5,9 +5,9 @@ import {
 } from 'lucide-react'
 import { useStore } from '@/lib/store'
 import { useI18n } from '@/lib/i18n'
-import { Badge, Button, Card, Tabs } from '@/components/ui/Primitives'
+import { Badge, Button, Card, EmptyState, Tabs } from '@/components/ui/Primitives'
 import { SectionHeader } from '@/components/RichText'
-import { seasonalChallenges, demoLeaderboards } from '@/lib/demo/quiz'
+import { seasonalChallenges } from '@/lib/content/quiz'
 import { BADGE_DEFS, RANKS, RANK_NAMES, rankForLevel } from '@/lib/gamification'
 import { UserAvatar } from '@/components/UserAvatar'
 import { cn, formatCount, levelFromXp, timeAgo } from '@/lib/utils'
@@ -34,16 +34,22 @@ export default function Activities() {
   const rank = rankForLevel(level)
 
   const leaderboard = useMemo(() => {
-    const rows = demoLeaderboards[boardTab].filter((r) => r.userId !== me?.id).map((r) => ({ ...r, isMe: false }))
-    if (me) {
-      const myScore =
-        boardTab === 'global'
-          ? me.xp
-          : state.quizRecords.reduce((a, r) => a + r.xp, 0)
-      rows.push({ userId: me.id, score: myScore, isMe: true })
-    }
-    return rows.sort((a, b) => b.score - a.score).slice(0, 10)
-  }, [boardTab, me, state.quizRecords])
+    const days = boardTab === 'weekly' ? 7 : boardTab === 'monthly' ? 30 : null
+    const cutoff = days !== null ? Date.now() - days * 86400000 : null
+    return state.users
+      .map((u) => {
+        const score =
+          boardTab === 'global'
+            ? u.xp
+            : state.quizRecords
+                .filter((r) => r.userId === u.id && cutoff !== null && +new Date(r.playedAt) >= cutoff)
+                .reduce((a, r) => a + r.xp, 0)
+        return { userId: u.id, score, isMe: u.id === me?.id }
+      })
+      .filter((r) => r.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 10)
+  }, [boardTab, me, state.users, state.quizRecords])
 
   const challengeMetric: Record<string, number> = {
     posts: state.progress.posts,
@@ -133,6 +139,9 @@ export default function Activities() {
                 />
               }
             />
+            {leaderboard.length === 0 && (
+              <EmptyState icon={<Trophy className="h-8 w-8" />} title={t('activities.leaderboardEmpty')} />
+            )}
             <ol className="mt-2 space-y-1.5">
               {leaderboard.map((row, i) => {
                 const user = state.users.find((u) => u.id === row.userId)
