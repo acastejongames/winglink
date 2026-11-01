@@ -13,6 +13,7 @@ import { RichText } from '../RichText'
 import { Badge, Button } from '../ui/Primitives'
 import { ReportModal, ShareModal, Lightbox } from '../modals'
 import { useToast } from '../ui/Toast'
+import { Emoji } from '../Emoji'
 
 const REACTIONS = ['👍', '❤️', '🛩️', '✈️', '🔥', '😮']
 
@@ -310,7 +311,7 @@ export function PostCard({ post, showCommunity }: { post: Post; showCommunity?: 
         <div className="flex items-center gap-1">
           {topReactions.map(([emoji, n]) => (
             <span key={emoji} className="flex h-5 w-5 items-center justify-center rounded-full bg-cloud-200 text-[11px] dark:bg-navy-700">
-              {emoji}
+              <Emoji char={emoji} />
             </span>
           ))}
           <span className="ml-1">{formatCount(totalReactions + (post.likedByMe && !topReactions.length ? 1 : 0), lang)}</span>
@@ -349,7 +350,7 @@ export function PostCard({ post, showCommunity }: { post: Post; showCommunity?: 
             className="flex w-full items-center justify-center gap-1.5 rounded-lg py-2 text-sm font-medium text-cloud-500 hover:bg-cloud-100 dark:hover:bg-navy-700"
             aria-label={t('post.addReaction')}
           >
-            {post.myReaction ? <span className="text-base leading-none">{post.myReaction}</span> : <Smile className="h-[18px] w-[18px]" />}
+            {post.myReaction ? <span className="flex text-base leading-none"><Emoji char={post.myReaction} /></span> : <Smile className="h-[18px] w-[18px]" />}
             {t('post.reactions')}
           </button>
           {reactionOpen && (
@@ -366,7 +367,7 @@ export function PostCard({ post, showCommunity }: { post: Post; showCommunity?: 
                     post.myReaction === emoji && 'bg-sky/20 scale-110',
                   )}
                 >
-                  {emoji}
+                  <Emoji char={emoji} />
                 </button>
               ))}
             </div>

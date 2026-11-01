@@ -11,6 +11,7 @@ import { PostCard } from '@/components/feed/PostCard'
 import { UserAvatar } from '@/components/UserAvatar'
 import { Badge, Button, Card, EmptyState, Modal, Spinner, Tabs, Textarea, Input, Select, AvatarFrame } from '@/components/ui/Primitives'
 import { BlockModal, ReportModal, Lightbox, ShareModal } from '@/components/modals'
+import { Emoji } from '@/components/Emoji'
 import { aircraftMap } from '@/lib/content/aircraft'
 import { BADGE_MAP, RANK_NAMES, rankForLevel } from '@/lib/gamification'
 import { appUrl, cn, copyText, formatCount, levelProgress, timeAgo } from '@/lib/utils'
@@ -186,7 +187,7 @@ export default function Profile() {
             <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
               <span className="flex items-center gap-2 font-display font-semibold">
                 <Award className="h-4 w-4 text-sky" />
-                {t('profile.level', { n: level })} · {rank.icon} {RANK_NAMES[rank.id][lang]}
+                {t('profile.level', { n: level })} · <Emoji char={rank.icon} /> {RANK_NAMES[rank.id][lang]}
               </span>
               <span className="text-xs text-cloud-300">
                 {t('profile.xpToNext', { n: prog.into, level: prog.level + 1 })}
@@ -198,7 +199,7 @@ export default function Profile() {
             <div className="mt-2 flex gap-1">
               {user.badges.slice(0, 10).map((b) => (
                 <span key={b} title={lang === 'es' ? BADGE_MAP[b]?.descEs : BADGE_MAP[b]?.desc} className="text-base">
-                  {BADGE_MAP[b]?.icon ?? '🏅'}
+                  <Emoji char={BADGE_MAP[b]?.icon ?? '🏅'} />
                 </span>
               ))}
             </div>

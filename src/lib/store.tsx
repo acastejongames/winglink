@@ -26,7 +26,7 @@ import {
   unlockAccount,
   type VaultStore,
 } from './crypto'
-import { LEVEL_BADGES, RANK_NAMES, rankForLevel } from './gamification'
+import { BADGE_DEFS, LEVEL_BADGES, RANK_NAMES, rankForLevel } from './gamification'
 import { useI18n } from './i18n'
 import { useToast } from '@/components/ui/Toast'
 
@@ -378,7 +378,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       if (!newly.length) return s
       const notifications = [...s.notifications]
       for (const id of newly) {
-        const name = t(`badge.${id}.name`)
+        const def = BADGE_DEFS.find((b) => b.id === id)
+        const name = lang === 'es' ? (def?.nameEs ?? id) : (def?.name ?? id)
         notifications.unshift({
           id: uid('n'),
           category: 'achievements',
@@ -386,7 +387,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           createdAt: new Date().toISOString(),
           read: false,
         })
-        toast(`🏅 ${name}`)
+        toast(name)
       }
       return {
         ...s,
@@ -419,14 +420,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
             {
               id: uid('n'),
               category: 'achievements',
-              text: t('notifications.levelUp', { rank: `${rank.icon} ${rankName}` }),
+              text: t('notifications.levelUp', { rank: rankName }),
               createdAt: new Date().toISOString(),
               read: false,
             },
             ...next.notifications,
           ],
         }
-        toast(`🎉 ${t('notifications.levelUp', { rank: `${rank.icon} ${rankName}` })}`)
+        toast(t('notifications.levelUp', { rank: rankName }))
       }
       return evaluateBadges(next, user.id)
     },

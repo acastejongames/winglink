@@ -5,6 +5,7 @@ import {
   Sun, Trophy, User, Users, X, ChevronDown, LayoutGrid,
 } from 'lucide-react'
 import { Logo } from '@/components/Logo'
+import { Emoji } from '@/components/Emoji'
 import { UserAvatar } from '@/components/UserAvatar'
 import { useStore } from '@/lib/store'
 import { useI18n } from '@/lib/i18n'
@@ -133,7 +134,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <div className="rounded-xl bg-gradient-to-br from-navy-700 to-navy-800 p-3.5 text-white">
           <div className="flex items-center justify-between text-xs text-cloud-300">
             <span>{t('profile.rank')}</span>
-            <span>{rank ? `${rank.icon} ${rankName}` : ''}</span>
+            <span className="flex items-center gap-1.5">{rank ? (<><Emoji char={rank.icon} />{rankName}</>) : ''}</span>
           </div>
           <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-navy-950/60">
             <div

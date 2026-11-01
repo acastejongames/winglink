@@ -8,6 +8,7 @@ import { UserAvatar } from '@/components/UserAvatar'
 import { Badge, Button, Card, EmptyState, Select } from '@/components/ui/Primitives'
 import { RichText } from '@/components/RichText'
 import { aircraftMap } from '@/lib/content/aircraft'
+import { Emoji } from '@/components/Emoji'
 import { cn, fileToCompressedDataUrl, timeAgo } from '@/lib/utils'
 import { useToast } from '@/components/ui/Toast'
 
@@ -112,10 +113,10 @@ export default function Messages() {
                 ? last.kind === 'text'
                   ? last.text
                   : last.kind === 'image'
-                    ? '📷'
+                    ? <Emoji char="📷" />
                     : last.kind === 'post'
-                      ? '🔗'
-                      : '✈️'
+                      ? <Emoji char="🔗" />
+                      : <Emoji char="✈️" />
                 : t('messages.noMessages')
               return (
                 <button
@@ -268,7 +269,7 @@ function MessageBubble({
     const post = state.posts.find((p) => p.id === message.postId)
     content = (
       <Link to="/home" className="block rounded-lg border border-sky/40 bg-sky/10 p-3 text-sm hover:bg-sky/15">
-        <span className="text-[11px] font-semibold uppercase text-sky-600 dark:text-sky">🔗 {t('post.share')}</span>
+        <span className="flex items-center gap-1 text-[11px] font-semibold uppercase text-sky-600 dark:text-sky"><Emoji char="🔗" /> {t('post.share')}</span>
         <p className="mt-1 line-clamp-3">{post?.text ?? message.text}</p>
       </Link>
     )

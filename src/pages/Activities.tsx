@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import {
   Award, Clock, Compass, Flag, Globe2, History, Gauge, MapPin, Plane, Trophy, Zap,
@@ -8,6 +8,7 @@ import { useI18n } from '@/lib/i18n'
 import { Badge, Button, Card, EmptyState, Tabs } from '@/components/ui/Primitives'
 import { SectionHeader } from '@/components/RichText'
 import { seasonalChallenges } from '@/lib/content/quiz'
+import { Emoji } from '@/components/Emoji'
 import { BADGE_DEFS, RANKS, RANK_NAMES, rankForLevel } from '@/lib/gamification'
 import { UserAvatar } from '@/components/UserAvatar'
 import { cn, formatCount, levelFromXp, timeAgo } from '@/lib/utils'
@@ -240,7 +241,7 @@ export default function Activities() {
                 <Stat label={t('activities.recordBest')} value={String(me.stats.quizBestScore)} />
                 <Stat label={t('activities.recordPlayed')} value={String(me.stats.quizzesPlayed)} />
                 <Stat label={t('activities.recordWins')} value={String(me.stats.quizWins)} />
-                <Stat label={t('activities.recordStreak')} value={`${me.stats.streak}🔥`} />
+                <Stat label={t('activities.recordStreak')} value={<span className="flex items-center justify-center gap-1">{me.stats.streak}<Emoji char="🔥" /></span>} />
               </div>
             )}
           </Card>
@@ -290,7 +291,7 @@ export default function Activities() {
   )
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
+function Stat({ label, value }: { label: string; value: ReactNode }) {
   return (
     <div className="rounded-xl bg-cloud-100 px-3 py-3 text-center dark:bg-navy-900/60">
       <p className="font-display text-2xl font-bold text-sky-600 dark:text-sky">{value}</p>
