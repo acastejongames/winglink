@@ -19,10 +19,11 @@ jobs:
   build:
     runs-on: ubuntu-latest
     env:
-      # Cloud backend credentials (public by design — they ship in the bundle).
-      # When unset, the app runs in local vault mode.
-      VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
-      VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+      # Cloud backend credentials — PUBLIC BY DESIGN (Supabase anon key ships
+      # in every browser bundle; RLS is the real gatekeeper). Never commit the
+      # service_role key or the database password.
+      VITE_SUPABASE_URL: https://biftqxkjposufelwduzw.supabase.co
+      VITE_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJpZnRxeGtqcG9zdWZlbHdkdXp3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTM1NjQ0MjcsImV4cCI6MjEwOTE0MDQyN30.GbHvbJSpcIPZSZbb0Rx8EYixfpl4URHymANEUQKw9kE
     steps:
       - name: Checkout
         uses: actions/checkout@v4
