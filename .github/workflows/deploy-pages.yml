@@ -18,6 +18,11 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      # Cloud backend credentials (public by design — they ship in the bundle).
+      # When unset, the app runs in local vault mode.
+      VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+      VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -34,15 +39,31 @@ jobs:
       - name: Run tests
         run: npm test
 
+      - name: Verify Supabase backend
+        if: env.VITE_SUPABASE_URL != ''
+        run: |
+          set -euo pipefail
+          code=$(curl -s -o /tmp/sb.json -w '%{http_code}' \
+            -H "apikey: ${VITE_SUPABASE_ANON_KEY}" \
+            "${VITE_SUPABASE_URL}/rest/v1/profiles?limit=1")
+          echo "GET /rest/v1/profiles → HTTP ${code}"
+          if [ "${code}" = "404" ]; then
+            echo "::error::Supabase schema is NOT applied yet. Paste supabase/schema.sql into the SQL Editor and re-run."
+            exit 1
+          fi
+          if [ "${code}" != "200" ]; then
+            echo "::error::Unexpected Supabase response:"
+            cat /tmp/sb.json
+            exit 1
+          fi
+          echo "✓ Supabase reachable, schema applied"
+
       - name: Build
         run: npm run build
         env:
           # GitHub Pages serves project sites from /winglink/
           VITE_BASE: /winglink/
           OG_IMAGE: https://acastejongames.github.io/winglink/images/f22-sunset.jpg
-          # Cloud backend (optional — app runs in local vault mode when unset)
-          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
-          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
