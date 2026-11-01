@@ -170,6 +170,9 @@ export default function SettingsPage() {
       <Card className="p-5">
         <SectionHeader title={t('settings.about')} icon={<Logo compact />} />
         <p className="text-sm leading-relaxed text-navy-700 dark:text-cloud-200">{t('settings.aboutBody')}</p>
+        <p className="mt-3 flex items-start gap-2 rounded-xl bg-sky/10 p-3 text-xs leading-relaxed text-sky-700 dark:text-sky-200">
+          <Shield className="mt-0.5 h-3.5 w-3.5 shrink-0" /> {t('settings.aboutSecurity')}
+        </p>
         <p className="mt-3 text-xs text-cloud-500">{t('settings.version', { v: '1.0.0' })}</p>
 
         <div className="mt-5 flex flex-wrap gap-2 border-t border-cloud-200 pt-4 dark:border-navy-700">

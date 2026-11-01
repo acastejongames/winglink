@@ -91,8 +91,9 @@ export function daysAhead(d: number): string {
 }
 
 /**
- * Deterministic client-side password check for local accounts.
- * Cloud authentication replaces this when Supabase is connected.
+ * Legacy migration only: verifies pre-vault accounts from the old plaintext
+ * build so they can be re-wrapped into the encrypted vault on sign-in.
+ * Never used for new accounts — those store no password material at all.
  */
 export function hashPassword(pw: string): string {
   const s = 'winglink::' + pw

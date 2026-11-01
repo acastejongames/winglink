@@ -26,7 +26,10 @@ function Protected({ children }: { children: ReactNode }) {
 }
 
 export default function App() {
-  const { me } = useStore()
+  const { me, hydrated } = useStore()
+  // Wait for the vault unlock before rendering anything — resolves in
+  // milliseconds (AES only; no password prompt on reload within the tab).
+  if (!hydrated) return null
   return (
     <Routes>
       <Route path="/auth" element={me ? <Navigate to="/home" replace /> : <AuthPage />} />

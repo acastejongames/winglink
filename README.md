@@ -55,13 +55,40 @@ English & Spanish · Dark mode by default · Free forever, no ads
 - lucide-react icons
 - Vitest + jsdom smoke suite covering every route and key interactions
 
+## Security & privacy
+
+WingLink encrypts everything private **on your device**:
+
+- **Passwords are never stored.** They exist only in memory while deriving
+  encryption keys (PBKDF2-SHA256, 600,000 iterations, per-account random salt).
+- **The vault is AES-256-GCM.** Emails, private messages, posts, settings and
+  every other byte of account data are persisted only as ciphertext
+  (`winglink.vault.v3`). Without the password the data is unreadable — even
+  with full disk access to the browser profile.
+- **Key hierarchy:** password → non-extractable KEK (memory only) → verifies
+  the account and unwraps a random data key that actually encrypts the vault.
+- **Per-tab session:** the unwrapped key lives in `sessionStorage` only, so
+  reloads stay signed in while the tab lives and are signed out everywhere
+  else. Close the tab → the key is gone.
+- **No clear-text email index:** sign-in is by username; the email sits only
+  inside the encrypted payload.
+- **Production CSP** (`script-src 'self'`, no external origins, no plugins)
+  plus React's default output encoding keep the XSS surface minimal.
+- **Honest limits:** this is client-side encryption without a backend, so it
+  protects data at rest on the device — it does not sync across devices or
+  defend against an attacker who has the unlocked device open. Cloud sync
+  (Supabase) can reuse the same envelope when it lands.
+
+If you forget your password, the vault cannot be recovered — the app says so
+at sign-up.
+
 ## Accounts & data
 
-- Accounts are created through sign-up and stored **on your device**; posts, likes,
-  messages and XP all persist locally between visits.
-- The data layer is architected to plug into **Supabase** (auth, Postgres, storage,
-  realtime) when a project is connected — account, content and social graphs map
-  cleanly onto its tables.
+- Accounts are created through sign-up; posts, likes, messages and XP persist
+  in the encrypted local vault between visits.
+- The data layer is architected to plug into **Supabase** (auth, Postgres,
+  storage, realtime) when a project is connected — account, content and social
+  graphs map cleanly onto its tables.
 - Aircraft photography comes from free stock collections (Pexels, Pixabay and
   public-domain/press imagery).
 - No advertising, no subscriptions, no paid competitive advantages.

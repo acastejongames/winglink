@@ -61,7 +61,7 @@ export interface User {
   frame: string
   visibility: Visibility
   joinedAt: string
-  /** Local account credential check (client-side; replaced by Supabase auth when connected). */
+  /** Legacy pre-vault builds only — stripped when migrating into the encrypted vault. */
   passHash?: string
   stats: UserStats
 }

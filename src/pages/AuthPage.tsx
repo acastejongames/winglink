@@ -22,18 +22,25 @@ export default function AuthPage() {
   const [interests, setInterests] = useState<string[]>([])
   const [ageOk, setAgeOk] = useState(false)
   const [error, setError] = useState('')
+  const [busy, setBusy] = useState(false)
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (busy) return
     setError('')
-    const res =
-      mode === 'in'
-        ? signIn(email, password)
-        : (() => {
-            if (!ageOk) return { ok: false, error: t('auth.errAge') }
-            return signUp({ email, username, displayName, password, interests })
-          })()
-    if (!res.ok && 'error' in res && res.error) setError(res.error)
+    setBusy(true)
+    try {
+      const res =
+        mode === 'in'
+          ? await signIn(username, password)
+          : ageOk
+            ? await signUp({ email, username, displayName, password, interests })
+            : { ok: false as const, error: t('auth.errAge') }
+      if (!res.ok && 'error' in res && res.error) setError(res.error)
+      if (res.ok) setPassword('')
+    } finally {
+      setBusy(false)
+    }
   }
 
   return (
@@ -105,11 +112,31 @@ export default function AuthPage() {
                 {mode === 'up' && (
                   <AuthDarkInput label={t('auth.displayName')} value={displayName} onChange={setDisplayName} hint={t('auth.displayNameHint')} />
                 )}
+                <AuthDarkInput
+                  label={t('auth.username')}
+                  value={username}
+                  onChange={setUsername}
+                  placeholder="spotter_jane"
+                  autoComplete="username"
+                />
                 {mode === 'up' && (
-                  <AuthDarkInput label={t('auth.username')} value={username} onChange={setUsername} placeholder="spotter_jane" />
+                  <AuthDarkInput
+                    label={t('auth.email')}
+                    value={email}
+                    onChange={setEmail}
+                    type="email"
+                    placeholder="you@example.com"
+                    autoComplete="email"
+                  />
                 )}
-                <AuthDarkInput label={t('auth.email')} value={email} onChange={setEmail} type="email" placeholder="you@example.com" />
-                <AuthDarkInput label={t('auth.password')} value={password} onChange={setPassword} type="password" placeholder="••••••••" />
+                <AuthDarkInput
+                  label={t('auth.password')}
+                  value={password}
+                  onChange={setPassword}
+                  type="password"
+                  placeholder="••••••••"
+                  autoComplete={mode === 'up' ? 'new-password' : 'current-password'}
+                />
 
                 {mode === 'up' && (
                   <div>
@@ -135,6 +162,13 @@ export default function AuthPage() {
                 )}
 
                 {mode === 'up' && (
+                  <p className="flex items-start gap-2 rounded-xl bg-sky/10 px-3 py-2.5 text-xs leading-relaxed text-sky-200">
+                    <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0 text-sky" />
+                    {t('auth.noRecovery')}
+                  </p>
+                )}
+
+                {mode === 'up' && (
                   <label className="flex items-start gap-2.5 text-xs leading-relaxed text-cloud-400">
                     <input type="checkbox" checked={ageOk} onChange={(e) => setAgeOk(e.target.checked)} className="mt-0.5 h-4 w-4 accent-sky" />
                     {t('auth.ageConfirm')}
@@ -143,8 +177,8 @@ export default function AuthPage() {
 
                 {error && <p className="rounded-lg bg-red-500/15 px-3 py-2 text-sm text-red-300">{error}</p>}
 
-                <Button type="submit" size="lg" className="w-full">
-                  {mode === 'up' ? t('auth.createCta') : t('auth.signIn')}
+                <Button type="submit" size="lg" className="w-full" disabled={busy}>
+                  {busy ? `${t('common.loading')}…` : mode === 'up' ? t('auth.createCta') : t('auth.signIn')}
                 </Button>
               </form>
             </Card>
@@ -162,6 +196,7 @@ function AuthDarkInput({
   type = 'text',
   placeholder,
   hint,
+  autoComplete,
 }: {
   label: string
   value: string
@@ -169,6 +204,7 @@ function AuthDarkInput({
   type?: string
   placeholder?: string
   hint?: string
+  autoComplete?: string
 }) {
   return (
     <label className="block">
@@ -177,6 +213,7 @@ function AuthDarkInput({
         type={type}
         value={value}
         placeholder={placeholder}
+        autoComplete={autoComplete}
         onChange={(e) => onChange(e.target.value)}
         className="h-11 w-full rounded-xl border border-cloud-300/20 bg-white/60 px-3.5 text-sm text-navy-800 outline-none transition-colors placeholder:text-cloud-400 focus:border-sky focus:ring-2 focus:ring-sky/25 dark:bg-navy-800 dark:text-cloud-100"
       />

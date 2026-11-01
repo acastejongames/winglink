@@ -14,13 +14,30 @@ import type {
   ThemeMode,
   User,
 } from './types'
-import { hashPassword, levelFromXp, uid } from './utils'
+import { levelFromXp, uid, hashPassword } from './utils'
+import {
+  EMPTY_VAULT,
+  VAULT_VERSION,
+  createAccount,
+  decryptJson,
+  encryptJson,
+  exportDek,
+  importDek,
+  unlockAccount,
+  type VaultStore,
+} from './crypto'
 import { LEVEL_BADGES, RANK_NAMES, rankForLevel } from './gamification'
 import { useI18n } from './i18n'
 import { useToast } from '@/components/ui/Toast'
 
-// v2: public launch — starts from a clean slate (v1 seed data is never loaded)
-const STORAGE_KEY = 'winglink.state.v2'
+// Encrypted vault (AES-256-GCM, key derived from the password via PBKDF2).
+// Nothing private — emails, messages, posts — is ever written in clear text.
+const VAULT_KEY = 'winglink.vault.v3'
+// Per-tab unlock session so reloads stay signed in while the tab lives.
+// Cleared automatically when the tab/session ends.
+const SESSION_KEY = 'winglink.session.v3'
+// Pre-vault plaintext data; migrated into the vault on next sign-in, then deleted.
+const LEGACY_KEY = 'winglink.state.v2'
 
 export interface ReportEntry {
   id: string
@@ -106,51 +123,83 @@ function freshState(): PersistedState {
   }
 }
 
-function loadState(): PersistedState {
+// ── Vault storage helpers ───────────────────────────────────────────
+function readVault(): VaultStore {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (!raw) return freshState()
-    const parsed = JSON.parse(raw) as Partial<PersistedState>
-    if (!parsed || typeof parsed !== 'object') return freshState()
-    return {
-      ...freshState(),
-      ...(parsed as PersistedState),
-      prefs: { ...defaultPrefs, ...parsed.prefs, notify: { ...defaultPrefs.notify, ...parsed.prefs?.notify } },
-    }
+    const raw = localStorage.getItem(VAULT_KEY)
+    if (!raw) return { ...EMPTY_VAULT }
+    const parsed = JSON.parse(raw) as VaultStore
+    if (!parsed || typeof parsed !== 'object' || !Array.isArray(parsed.accounts)) return { ...EMPTY_VAULT }
+    return { version: parsed.version ?? VAULT_VERSION, accounts: parsed.accounts, payloads: parsed.payloads ?? {} }
   } catch {
-    return freshState()
+    return { ...EMPTY_VAULT }
   }
 }
 
-function saveState(state: PersistedState) {
+function writeVault(vault: VaultStore) {
+  localStorage.setItem(VAULT_KEY, JSON.stringify(vault))
+}
+
+interface VaultSession {
+  accountId: string
+  dek: string
+}
+
+function readSession(): VaultSession | null {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
+    const raw = sessionStorage.getItem(SESSION_KEY)
+    if (!raw) return null
+    const parsed = JSON.parse(raw) as VaultSession
+    return parsed && parsed.accountId && parsed.dek ? parsed : null
   } catch {
-    // Quota exceeded — drop oversized local media from the oldest uploads and retry once.
-    try {
-      const trimmed: PersistedState = {
-        ...state,
-        posts: state.posts.map((p) => ({
-          ...p,
-          images: p.images?.map((img) => (img.startsWith('data:') ? 'images/f22-sky.jpg' : img)),
-        })),
-      }
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(trimmed))
-    } catch {
-      /* give up silently — in-memory session still works */
-    }
+    return null
   }
+}
+
+function writeSession(accountId: string, dekB64: string) {
+  sessionStorage.setItem(SESSION_KEY, JSON.stringify({ accountId, dek: dekB64 }))
+}
+
+function clearSession() {
+  sessionStorage.removeItem(SESSION_KEY)
+}
+
+function readLegacy(): PersistedState | null {
+  try {
+    const raw = localStorage.getItem(LEGACY_KEY)
+    if (!raw) return null
+    const parsed = JSON.parse(raw) as PersistedState
+    if (!parsed || typeof parsed !== 'object' || !Array.isArray(parsed.users)) return null
+    return { ...freshState(), ...parsed }
+  } catch {
+    return null
+  }
+}
+
+function normalizeState(parsed: Partial<PersistedState>): PersistedState {
+  return {
+    ...freshState(),
+    ...(parsed as PersistedState),
+    prefs: { ...defaultPrefs, ...parsed.prefs, notify: { ...defaultPrefs.notify, ...parsed.prefs?.notify } },
+  }
+}
+
+/** Strip legacy credential material before a payload goes into the vault. */
+function stripLegacyCredentials(s: PersistedState): PersistedState {
+  return { ...s, users: s.users.map(({ passHash: _ph, ...u }) => u) }
 }
 
 interface StoreValue {
   state: PersistedState
   me: User | null
+  /** False until the vault has been unlocked (or determined absent) at boot. */
+  hydrated: boolean
   theme: ThemeMode
   setTheme: (t: ThemeMode) => void
   lang: Language
-  // auth
-  signIn: (email: string, password: string) => { ok: boolean; error?: string }
-  signUp: (data: { email: string; username: string; displayName: string; password: string; interests: string[] }) => { ok: boolean; error?: string }
+  // auth — passwords are used only to derive encryption keys, never stored
+  signIn: (username: string, password: string) => Promise<{ ok: boolean; error?: string }>
+  signUp: (data: { email: string; username: string; displayName: string; password: string; interests: string[] }) => Promise<{ ok: boolean; error?: string }>
   signOut: () => void
   // users & social
   getUser: (id: string) => User | undefined
@@ -205,16 +254,93 @@ interface StoreValue {
 const StoreContext = createContext<StoreValue | null>(null)
 
 export function StoreProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<PersistedState>(loadState)
+  const [state, setState] = useState<PersistedState>(freshState)
+  const [hydrated, setHydrated] = useState(false)
   const [theme, setThemeState] = useState<ThemeMode>(() => (localStorage.getItem('winglink.theme') === 'light' ? 'light' : 'dark'))
   const { t, lang } = useI18n()
   const { toast } = useToast()
   const stateRef = useRef(state)
   stateRef.current = state
+  const dekRef = useRef<CryptoKey | null>(null)
 
+  // Boot: unlock the vault with the per-tab session key (no password prompt on
+  // reload while the tab lives). Without a session, start signed out with the
+  // encrypted data left untouched on disk.
   useEffect(() => {
-    saveState(state)
-  }, [state])
+    let cancelled = false
+    ;(async () => {
+      try {
+        const vault = readVault()
+        const session = readSession()
+        const account = session ? vault.accounts.find((a) => a.id === session.accountId) : undefined
+        const sealed = account ? vault.payloads[account.id] : undefined
+        if (account && sealed && session) {
+          const dek = await importDek(session.dek)
+          const payload = await decryptJson<PersistedState>(dek, sealed)
+          if (!cancelled) {
+            dekRef.current = dek
+            setState(normalizeState(payload))
+            setHydrated(true)
+            return
+          }
+        }
+      } catch {
+        /* corrupted or foreign payload — fall through to a clean signed-out state */
+      }
+      if (!cancelled) {
+        clearSession()
+        setState(freshState())
+        setHydrated(true)
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  // Persist: re-encrypt the whole state into the vault. Never writes clear text.
+  const persistSeq = useRef(0)
+  const saveTimer = useRef<number | null>(null)
+  useEffect(() => {
+    if (!hydrated || !dekRef.current || !state.authUserId) return
+    const seq = ++persistSeq.current
+    if (saveTimer.current) window.clearTimeout(saveTimer.current)
+    saveTimer.current = window.setTimeout(() => {
+      const dek = dekRef.current
+      const accountId = state.authUserId
+      if (!dek || !accountId) return
+      void (async () => {
+        try {
+          const sealed = await encryptJson(dek, state)
+          if (persistSeq.current !== seq) return // newer save supersedes
+          const vault = readVault()
+          vault.payloads[accountId] = sealed
+          writeVault(vault)
+        } catch {
+          // Quota exceeded — replace oversized uploads with a stock photo and retry once.
+          try {
+            const trimmed: PersistedState = {
+              ...state,
+              posts: state.posts.map((p) => ({
+                ...p,
+                images: p.images?.map((img) => (img.startsWith('data:') ? 'images/f22-sky.jpg' : img)),
+              })),
+            }
+            const sealed = await encryptJson(dek, trimmed)
+            if (persistSeq.current !== seq) return
+            const vault = readVault()
+            vault.payloads[accountId] = sealed
+            writeVault(vault)
+          } catch {
+            /* give up silently — the in-memory session still works */
+          }
+        }
+      })()
+    }, 350)
+    return () => {
+      if (saveTimer.current) window.clearTimeout(saveTimer.current)
+    }
+  }, [state, hydrated])
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', theme === 'dark')
@@ -316,33 +442,69 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   // ── Auth ──────────────────────────────────────────────────────────
   const signIn = useCallback(
-    (email: string, password: string) => {
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { ok: false, error: t('auth.errEmail') }
+    async (username: string, password: string) => {
+      const uname = username.trim().toLowerCase()
+      if (!/^[a-z0-9_]{3,20}$/i.test(uname)) return { ok: false, error: t('auth.errUsername') }
       if (password.length < 8) return { ok: false, error: t('auth.errPassword') }
-      const local = stateRef.current.users.find((u) => u.email?.toLowerCase() === email.toLowerCase())
-      if (!local) return { ok: false, error: t('auth.errNoAccount') }
-      if (local.passHash !== undefined && local.passHash !== hashPassword(password)) {
-        return { ok: false, error: t('auth.errWrongPassword') }
+
+      // 1) Encrypted vault account
+      const vault = readVault()
+      const account = vault.accounts.find((a) => a.username === uname)
+      if (account) {
+        const dek = await unlockAccount(account, password)
+        if (!dek) return { ok: false, error: t('auth.errWrongPassword') }
+        const sealed = vault.payloads[account.id]
+        const payload = sealed ? await decryptJson<PersistedState>(dek, sealed).catch(() => null) : null
+        const next = payload ? normalizeState(payload) : { ...freshState(), authUserId: account.id }
+        dekRef.current = dek
+        writeSession(account.id, await exportDek(dek))
+        setState(next)
+        toast(t('auth.signedIn'))
+        return { ok: true }
       }
-      patch((s) => ({ ...s, authUserId: local.id }))
-      toast(t('auth.signedIn'))
-      return { ok: true }
+
+      // 2) Legacy plaintext build — verify, then migrate into the vault
+      const legacy = readLegacy()
+      const legacyUser = legacy?.users.find((u) => u.username.toLowerCase() === uname)
+      if (legacyUser && legacy) {
+        if (!legacyUser.passHash || legacyUser.passHash !== hashPassword(password)) {
+          return { ok: false, error: t('auth.errWrongPassword') }
+        }
+        const { account: newAcc, dek } = await createAccount(legacyUser.id, uname, password)
+        const clean = stripLegacyCredentials({ ...legacy, authUserId: legacyUser.id })
+        const sealed = await encryptJson(dek, clean)
+        writeVault({ version: VAULT_VERSION, accounts: [newAcc], payloads: { [newAcc.id]: sealed } })
+        localStorage.removeItem(LEGACY_KEY)
+        dekRef.current = dek
+        writeSession(newAcc.id, await exportDek(dek))
+        setState(clean)
+        toast(t('auth.signedIn'))
+        return { ok: true }
+      }
+
+      return { ok: false, error: t('auth.errNoAccount') }
     },
-    [patch, t, toast],
+    [t, toast],
   )
 
   const signUp = useCallback(
-    (data: { email: string; username: string; displayName: string; password: string; interests: string[] }) => {
+    async (data: { email: string; username: string; displayName: string; password: string; interests: string[] }) => {
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) return { ok: false, error: t('auth.errEmail') }
       if (data.password.length < 8) return { ok: false, error: t('auth.errPassword') }
-      if (!/^[a-z0-9_]{3,20}$/i.test(data.username)) return { ok: false, error: t('auth.errUsername') }
+      const uname = data.username.trim().toLowerCase()
+      if (!/^[a-z0-9_]{3,20}$/i.test(uname)) return { ok: false, error: t('auth.errUsername') }
       if (!data.displayName.trim()) return { ok: false, error: t('auth.errName') }
-      const taken = stateRef.current.users.some((u) => u.username === data.username.toLowerCase())
-      if (taken) return { ok: false, error: t('auth.errUserTaken') }
-      const id = 'u_me'
+      const vault = readVault()
+      if (vault.accounts.some((a) => a.username === uname)) return { ok: false, error: t('auth.errUserTaken') }
+      const legacy = readLegacy()
+      if (legacy?.users.some((u) => u.username.toLowerCase() === uname)) return { ok: false, error: t('auth.errUserTaken') }
+
+      const id = uid('u')
+      // The password exists only as key material — it is never stored anywhere.
+      const { account, dek } = await createAccount(id, uname, data.password)
       const newUser: User = {
         id,
-        username: data.username.toLowerCase(),
+        username: uname,
         email: data.email,
         displayName: data.displayName.trim(),
         bio: '',
@@ -362,25 +524,31 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         frame: 'none',
         visibility: 'public',
         joinedAt: new Date().toISOString(),
-        passHash: hashPassword(data.password),
         stats: { posts: 0, likesReceived: 0, comments: 0, quizzesPlayed: 0, quizBestScore: 0, quizWins: 0, streak: 0 },
       }
-      patch((s) => {
-        const users = s.users.some((u) => u.id === id) ? s.users.map((u) => (u.id === id ? newUser : u)) : [...s.users, newUser]
-        return { ...s, users, authUserId: id }
-      })
+      const initial: PersistedState = { ...freshState(), users: [newUser], authUserId: id }
+      const sealed = await encryptJson(dek, initial)
+      writeVault({ version: VAULT_VERSION, accounts: [...vault.accounts, account], payloads: { ...vault.payloads, [id]: sealed } })
+      dekRef.current = dek
+      writeSession(id, await exportDek(dek))
+      setState(initial)
       toast(t('auth.welcome', { name: newUser.displayName }))
       return { ok: true }
     },
-    [patch, t, toast],
+    [t, toast],
   )
 
   const signOut = useCallback(() => {
-    patch((s) => ({ ...s, authUserId: null }))
-  }, [patch])
+    dekRef.current = null
+    clearSession()
+    setState(freshState())
+  }, [])
 
   const resetData = useCallback(() => {
-    localStorage.removeItem(STORAGE_KEY)
+    dekRef.current = null
+    clearSession()
+    localStorage.removeItem(VAULT_KEY)
+    localStorage.removeItem(LEGACY_KEY)
     setState(freshState())
   }, [])
 
@@ -1005,6 +1173,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     () => ({
       state,
       me,
+      hydrated,
       theme,
       setTheme,
       lang,
@@ -1053,7 +1222,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       resetData,
     }),
     [
-      state, me, theme, setTheme, lang, signIn, signUp, signOut, getUser, getUserByUsername,
+      state, me, hydrated, theme, setTheme, lang, signIn, signUp, signOut, getUser, getUserByUsername,
       updateProfile, toggleFollow, isFollowing, sendFriendRequest, acceptFriend, declineFriend, removeFriend,
       isFriend, blockUser, unblockUser, addPost, deletePost, toggleLike, setReaction, toggleSave, sharePost,
       votePoll, addComment, toggleCommentLike, toggleJoinCommunity, createCommunity, joinChallenge,

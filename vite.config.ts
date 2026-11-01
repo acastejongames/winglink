@@ -19,15 +19,43 @@ function baseHrefPlugin(appBase: string): Plugin {
       order: 'pre',
       handler(html) {
         const ogImage = process.env.OG_IMAGE || `${appBase}images/f22-sunset.jpg`
-        return html.replace('%BASE_HREF%', appBase).replaceAll('%OG_IMAGE%', ogImage)
+        return html.replaceAll('%BASE_HREF%', appBase).replaceAll('%OG_IMAGE%', ogImage)
       },
+    },
+  }
+}
+
+/**
+ * Content-Security-Policy for production builds (static meta CSP).
+ * Locks the app down: no inline scripts, no external origins, no plugins —
+ * dramatically shrinking the XSS surface. Injected only at build time so the
+ * dev server keeps HMR working.
+ */
+function cspPlugin(): Plugin {
+  return {
+    name: 'winglink-csp',
+    apply: 'build',
+    transformIndexHtml(html) {
+      const csp = [
+        "default-src 'self'",
+        "base-uri 'self'",
+        "object-src 'none'",
+        "script-src 'self'",
+        "style-src 'self' 'unsafe-inline'",
+        "img-src 'self' data: blob:",
+        "media-src 'self' data: blob:",
+        "font-src 'self'",
+        "connect-src 'self'",
+        "form-action 'self'",
+      ].join('; ')
+      return html.replace('<head>', `<head>\n    <meta http-equiv="Content-Security-Policy" content="${csp}" />`)
     },
   }
 }
 
 export default defineConfig({
   base,
-  plugins: [react(), baseHrefPlugin(base)],
+  plugins: [react(), baseHrefPlugin(base), cspPlugin()],
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
