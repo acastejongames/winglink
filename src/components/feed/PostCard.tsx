@@ -442,6 +442,7 @@ export function PostCard({ post, showCommunity }: { post: Post; showCommunity?: 
         postId={post.id}
       />
       <Lightbox
+        open={lightbox !== null}
         images={post.images ?? []}
         index={lightbox ?? 0}
         onClose={() => setLightbox(null)}

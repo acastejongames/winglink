@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { Flag, ShieldBan, X, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Button, Modal, Textarea, Select } from './ui/Primitives'
@@ -178,6 +178,7 @@ export function ShareModal({
 export function Lightbox({
   images,
   index,
+  open = true,
   onClose,
   onIndex,
   caption,
@@ -185,17 +186,38 @@ export function Lightbox({
 }: {
   images: string[]
   index: number
+  open?: boolean
   onClose: () => void
   onIndex: (i: number) => void
   caption?: ReactNode
   footer?: ReactNode
 }) {
   const { t } = useI18n()
-  if (!images.length) return null
+  useEffect(() => {
+    if (!open) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+      else if (e.key === 'ArrowLeft') onIndex((index - 1 + images.length) % images.length)
+      else if (e.key === 'ArrowRight') onIndex((index + 1) % images.length)
+    }
+    document.addEventListener('keydown', onKey)
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.removeEventListener('keydown', onKey)
+      document.body.style.overflow = ''
+    }
+  }, [open, index, images.length, onClose, onIndex])
+  if (!open || !images.length) return null
   const prev = () => onIndex((index - 1 + images.length) % images.length)
   const next = () => onIndex((index + 1) % images.length)
   return (
-    <div className="fixed inset-0 z-[95] flex flex-col items-center justify-center bg-navy-950/95 p-4 animate-fade-in" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-[95] flex flex-col items-center justify-center bg-navy-950/95 p-4 animate-fade-in"
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-label={t('lightbox.label')}
+    >
       <button onClick={onClose} aria-label={t('common.close')} className="absolute right-4 top-4 rounded-full p-2 text-cloud-300 hover:bg-white/10">
         <X className="h-6 w-6" />
       </button>

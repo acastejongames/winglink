@@ -103,4 +103,30 @@ describe('WingLink route smoke tests', () => {
     act(() => commentBtn!.click())
     expect(el.querySelector('input[placeholder]')).toBeTruthy()
   })
+
+  it('feed is not covered by overlays; image lightbox opens and closes with the X', () => {
+    const el = renderRoute('/home')
+    // Regression: posts with photos used to mount a permanent full-screen
+    // lightbox overlay that could not be dismissed.
+    expect(document.querySelector('[role="dialog"]')).toBeNull()
+
+    // Click the first post photo (MediaGrid button, excluding avatar images)
+    const imgButton = Array.from(el.querySelectorAll('button')).find(
+      (b) => b.querySelector('img[src^="images/"]') && !b.querySelector('img[src*="avatar-"]'),
+    )
+    expect(imgButton).toBeTruthy()
+    act(() => imgButton!.click())
+
+    const dialog = document.querySelector('[role="dialog"]')
+    expect(dialog).toBeTruthy()
+    expect(dialog!.getAttribute('aria-modal')).toBe('true')
+
+    // Close it with the X button
+    const closeBtn = Array.from(dialog!.querySelectorAll('button')).find((b) =>
+      ['Close', 'Cerrar'].includes(b.getAttribute('aria-label') ?? ''),
+    )
+    expect(closeBtn).toBeTruthy()
+    act(() => closeBtn!.click())
+    expect(document.querySelector('[role="dialog"]')).toBeNull()
+  })
 })
