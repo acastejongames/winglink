@@ -13,7 +13,7 @@ import { Badge, Button, Card, EmptyState, Modal, Spinner, Tabs, Textarea, Input,
 import { BlockModal, ReportModal, Lightbox, ShareModal } from '@/components/modals'
 import { aircraftMap } from '@/lib/demo/aircraft'
 import { BADGE_MAP, RANK_NAMES, rankForLevel } from '@/lib/gamification'
-import { cn, copyText, formatCount, levelProgress, timeAgo } from '@/lib/utils'
+import { appUrl, cn, copyText, formatCount, levelProgress, timeAgo } from '@/lib/utils'
 
 export default function Profile() {
   const { username } = useParams<{ username: string }>()
@@ -131,7 +131,7 @@ export default function Profile() {
                           icon={<Share2 className="h-4 w-4" />}
                           label={t('profile.shareProfile')}
                           onClick={() => {
-                            copyText(`${location.origin}/profile/${user.username}`)
+                            copyText(appUrl(`profile/${user.username}`))
                             toast(t('common.linkCopied'))
                             setMenuOpen(false)
                           }}
@@ -397,7 +397,7 @@ export default function Profile() {
       <EditProfileModal open={editOpen} onClose={() => setEditOpen(false)} />
       <BlockModal open={blockOpen} onClose={() => setBlockOpen(false)} user={{ id: user.id, displayName: user.displayName }} />
       <ReportModal open={reportOpen} onClose={() => setReportOpen(false)} targetType="user" targetId={user.id} />
-      <ShareModal open={shareOpen} onClose={() => setShareOpen(false)} title={user.displayName} url={`${location.origin}/profile/${user.username}`} />
+      <ShareModal open={shareOpen} onClose={() => setShareOpen(false)} title={user.displayName} url={appUrl(`profile/${user.username}`)} />
       {lightboxIdx !== null && media.length > 0 && (
         <Lightbox
           images={media.map((m) => m.img)}

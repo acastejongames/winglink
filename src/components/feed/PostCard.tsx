@@ -7,7 +7,7 @@ import {
 import type { Comment, Post, User } from '@/lib/types'
 import { useStore } from '@/lib/store'
 import { useI18n } from '@/lib/i18n'
-import { cn, formatCount, timeAgo } from '@/lib/utils'
+import { appUrl, cn, formatCount, timeAgo } from '@/lib/utils'
 import { UserAvatar, UserAvatarLink } from '../UserAvatar'
 import { RichText } from '../RichText'
 import { Badge, Button } from '../ui/Primitives'
@@ -229,7 +229,7 @@ export function PostCard({ post, showCommunity }: { post: Post; showCommunity?: 
             <div className="absolute right-0 top-9 z-20 w-56 animate-scale-in overflow-hidden rounded-xl border border-cloud-200 bg-white py-1.5 shadow-card-hover dark:border-navy-600 dark:bg-navy-900">
               <button
                 onClick={() => {
-                  navigator.clipboard?.writeText(`${location.origin}/home?post=${post.id}`)
+                  navigator.clipboard?.writeText(appUrl(`home?post=${post.id}`))
                   toast(t('common.linkCopied'))
                   setMenuOpen(false)
                 }}
@@ -438,7 +438,7 @@ export function PostCard({ post, showCommunity }: { post: Post; showCommunity?: 
         open={shareOpen}
         onClose={() => setShareOpen(false)}
         title={`${author.displayName}: ${post.text.slice(0, 80)}${post.text.length > 80 ? '…' : ''}`}
-        url={`${location.origin}/home?post=${post.id}`}
+        url={appUrl(`home?post=${post.id}`)}
         postId={post.id}
       />
       <Lightbox

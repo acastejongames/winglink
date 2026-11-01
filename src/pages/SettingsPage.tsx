@@ -8,7 +8,7 @@ import { Badge, Button, Card, EmptyState, Select, Switch } from '@/components/ui
 import { SectionHeader } from '@/components/RichText'
 import { Logo } from '@/components/Logo'
 import { Link } from 'react-router-dom'
-import { cn } from '@/lib/utils'
+import { appUrl, cn } from '@/lib/utils'
 
 const NOTIFY_KEYS = [
   'followers', 'friends', 'reactions', 'comments', 'mentions', 'communities', 'messages', 'challenges', 'achievements',
@@ -178,7 +178,7 @@ export default function SettingsPage() {
         <p className="mt-3 text-xs text-cloud-500">{t('settings.version', { v: '1.0.0' })}</p>
 
         <div className="mt-5 flex flex-wrap gap-2 border-t border-cloud-200 pt-4 dark:border-navy-700">
-          <Button variant="ghost" size="sm" onClick={() => { signOut(); location.assign('/auth') }}>
+          <Button variant="ghost" size="sm" onClick={() => { signOut(); location.assign(appUrl('auth')) }}>
             {t('nav.signOut')}
           </Button>
           {confirmDelete ? (
@@ -188,7 +188,7 @@ export default function SettingsPage() {
               onClick={() => {
                 resetData()
                 toast(t('settings.deleted'))
-                location.assign('/auth')
+                location.assign(appUrl('auth'))
               }}
             >
               <Trash2 className="h-4 w-4" /> {t('settings.deleteConfirm')}

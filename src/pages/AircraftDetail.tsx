@@ -6,7 +6,7 @@ import { useStore } from '@/lib/store'
 import { useI18n } from '@/lib/i18n'
 import { Badge, Button, Card, EmptyState, Modal, Select, Spinner } from '@/components/ui/Primitives'
 import { ShareModal } from '@/components/modals'
-import { cn } from '@/lib/utils'
+import { appUrl, cn } from '@/lib/utils'
 
 export default function AircraftDetail() {
   const { id } = useParams<{ id: string }>()
@@ -217,7 +217,7 @@ export default function AircraftDetail() {
         open={shareOpen}
         onClose={() => setShareOpen(false)}
         title={aircraft.name}
-        url={`${location.origin}/aircraft/${aircraft.id}`}
+        url={appUrl(`aircraft/${aircraft.id}`)}
         aircraftId={aircraft.id}
       />
     </div>

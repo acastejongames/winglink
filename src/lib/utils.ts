@@ -90,6 +90,16 @@ export function daysAhead(d: number): string {
   return new Date(Date.now() + d * DAY).toISOString()
 }
 
+/**
+ * Absolute in-app URL that respects the deployment base path
+ * (e.g. '/winglink/' on GitHub Pages, '/' in local dev).
+ */
+export function appUrl(path: string): string {
+  const base = import.meta.env.BASE_URL
+  const p = path.replace(/^\/+/, '')
+  return `${window.location.origin}${base}${p}`
+}
+
 export function slugify(s: string): string {
   return s
     .toLowerCase()
