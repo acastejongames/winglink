@@ -47,21 +47,40 @@ jobs:
       - name: Verify Supabase backend
         if: env.VITE_SUPABASE_URL != ''
         run: |
-          set -euo pipefail
-          code=$(curl -s -o /tmp/sb.json -w '%{http_code}' \
-            -H "apikey: ${VITE_SUPABASE_ANON_KEY}" \
-            "${VITE_SUPABASE_URL}/rest/v1/profiles?limit=1")
-          echo "GET /rest/v1/profiles → HTTP ${code}"
-          if [ "${code}" = "404" ]; then
-            echo "::error::Supabase schema is NOT applied yet. Paste supabase/schema.sql into the SQL Editor and re-run."
+          set -uo pipefail
+          echo "── Table probe (anon; 200 = exists, 404 = missing) ──"
+          missing=0
+          for t in profiles posts comments comment_likes reactions poll_votes \
+                   follows friendships friend_requests blocks reports \
+                   communities community_members conversations conversation_members \
+                   messages notifications quiz_records challenge_progress; do
+            code=$(curl -s -o /tmp/sb.json -w '%{http_code}' \
+              -H "apikey: ${VITE_SUPABASE_ANON_KEY}" \
+              "${VITE_SUPABASE_URL}/rest/v1/${t}?limit=1")
+            if [ "${code}" = "200" ]; then
+              echo "✓ ${t}"
+            elif [ "${code}" = "404" ]; then
+              echo "✗ ${t} — MISSING"
+              missing=1
+            else
+              echo "? ${t} → HTTP ${code} $(head -c 200 /tmp/sb.json)"
+              missing=1
+            fi
+          done
+          echo "── RPC probe ──"
+          for fn in ensure_dm; do
+            code=$(curl -s -o /tmp/sb.json -w '%{http_code}' -X POST \
+              -H "apikey: ${VITE_SUPABASE_ANON_KEY}" -H "Content-Type: application/json" \
+              "${VITE_SUPABASE_URL}/rest/v1/rpc/${fn}" -d '{}')
+            # unauthenticated call should fail auth, not 404 (404 = function missing)
+            echo "rpc ${fn} → HTTP ${code} $(head -c 160 /tmp/sb.json)"
+            if [ "${code}" = "404" ]; then missing=1; fi
+          done
+          if [ "${missing}" != "0" ]; then
+            echo "::error::Backend schema incomplete — re-run the FULL supabase/schema.sql in the SQL Editor (look for the first error in the results)."
             exit 1
           fi
-          if [ "${code}" != "200" ]; then
-            echo "::error::Unexpected Supabase response:"
-            cat /tmp/sb.json
-            exit 1
-          fi
-          echo "✓ Supabase reachable, schema applied"
+          echo "✓ Supabase: all tables + RPCs present"
 
       - name: Build
         run: npm run build
