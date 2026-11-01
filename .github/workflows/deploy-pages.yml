@@ -50,34 +50,37 @@ jobs:
           set -uo pipefail
           echo "── Table probe (anon; 200 = exists, 404 = missing) ──"
           missing=0
+          report=""
           for t in profiles posts comments comment_likes reactions poll_votes \
                    follows friendships friend_requests blocks reports \
                    communities community_members conversations conversation_members \
                    messages notifications quiz_records challenge_progress; do
             code=$(curl -s -o /tmp/sb.json -w '%{http_code}' \
               -H "apikey: ${VITE_SUPABASE_ANON_KEY}" \
-              "${VITE_SUPABASE_URL}/rest/v1/${t}?limit=1")
+              "${VITE_SUPABASE_URL}/rest/v1/${t}?limit=1" || echo 000)
             if [ "${code}" = "200" ]; then
-              echo "✓ ${t}"
+              echo "OK   ${t}"
             elif [ "${code}" = "404" ]; then
-              echo "✗ ${t} — MISSING"
+              echo "MISS ${t}"
+              echo "::error title=Missing table::${t} — 404, not in schema. Re-run supabase/schema.sql."
               missing=1
             else
-              echo "? ${t} → HTTP ${code} $(head -c 200 /tmp/sb.json)"
+              echo "ERR  ${t} HTTP ${code} $(head -c 200 /tmp/sb.json)"
+              echo "::error title=Table error::${t} → HTTP ${code}: $(head -c 200 /tmp/sb.json)"
               missing=1
             fi
           done
           echo "── RPC probe ──"
-          for fn in ensure_dm; do
-            code=$(curl -s -o /tmp/sb.json -w '%{http_code}' -X POST \
-              -H "apikey: ${VITE_SUPABASE_ANON_KEY}" -H "Content-Type: application/json" \
-              "${VITE_SUPABASE_URL}/rest/v1/rpc/${fn}" -d '{}')
-            # unauthenticated call should fail auth, not 404 (404 = function missing)
-            echo "rpc ${fn} → HTTP ${code} $(head -c 160 /tmp/sb.json)"
-            if [ "${code}" = "404" ]; then missing=1; fi
-          done
+          code=$(curl -s -o /tmp/sb.json -w '%{http_code}' -X POST \
+            -H "apikey: ${VITE_SUPABASE_ANON_KEY}" -H "Content-Type: application/json" \
+            "${VITE_SUPABASE_URL}/rest/v1/rpc/ensure_dm" -d '{}' || echo 000)
+          echo "rpc ensure_dm → HTTP ${code} $(head -c 160 /tmp/sb.json)"
+          if [ "${code}" = "404" ]; then
+            echo "::error title=Missing RPC::ensure_dm function not found — re-run supabase/schema.sql."
+            missing=1
+          fi
           if [ "${missing}" != "0" ]; then
-            echo "::error::Backend schema incomplete — re-run the FULL supabase/schema.sql in the SQL Editor (look for the first error in the results)."
+            echo "::error title=Backend schema incomplete::See the per-table annotations above — re-run the FULL supabase/schema.sql in the SQL Editor (check the first error in its results)."
             exit 1
           fi
           echo "✓ Supabase: all tables + RPCs present"
