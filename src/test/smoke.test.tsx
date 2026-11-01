@@ -158,6 +158,24 @@ describe('WingLink route smoke tests', () => {
     expect(el.textContent ?? '').toMatch(/Where Aviation Connects|Donde la aviación conecta/i)
   })
 
+  it('redirects signed-out visitors from protected routes to auth (no infinite spinner)', () => {
+    // Regression: with an empty user list the Protected gate used to render
+    // a permanent loading spinner instead of redirecting.
+    localStorage.removeItem('winglink.state.v2')
+    const el = renderRoute('/home')
+    expect(el.querySelector('[role="status"]')).toBeNull()
+    expect(el.textContent ?? '').toMatch(/Where Aviation Connects|Donde la aviación conecta/i)
+  })
+
+  it('shows not-found instead of hanging for unknown community, profile and aircraft', () => {
+    signInFixture()
+    for (const path of ['/communities/no-such-group', '/profile/ghost_user', '/aircraft/nope']) {
+      const el = renderRoute(path)
+      expect(el.querySelector('[role="status"]')).toBeNull()
+      expect(el.textContent ?? '').toMatch(/not found|no encontrada|Page not found/i)
+    }
+  })
+
   it('starts a Guess the Aircraft round', () => {
     signInFixture()
     const el = renderRoute('/activities/aircraft')

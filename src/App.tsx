@@ -2,7 +2,6 @@ import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import type { ReactNode } from 'react'
 import { useStore } from './lib/store'
 import { AppShell } from './layout/AppShell'
-import { Spinner } from './components/ui/Primitives'
 import AuthPage from './pages/AuthPage'
 import Home from './pages/Home'
 import Explore from './pages/Explore'
@@ -20,9 +19,8 @@ import SearchPage from './pages/SearchPage'
 import NotFound from './pages/NotFound'
 
 function Protected({ children }: { children: ReactNode }) {
-  const { me, state } = useStore()
+  const { me } = useStore()
   const location = useLocation()
-  if (state.users.length === 0) return <Spinner />
   if (!me) return <Navigate to="/auth" state={{ from: location }} replace />
   return <>{children}</>
 }

@@ -132,7 +132,7 @@ function saveState(state: PersistedState) {
         ...state,
         posts: state.posts.map((p) => ({
           ...p,
-          images: p.images?.map((img) => (img.startsWith('data:') ? 'images/spotting-fence.jpg' : img)),
+          images: p.images?.map((img) => (img.startsWith('data:') ? 'images/f22-sky.jpg' : img)),
         })),
       }
       localStorage.setItem(STORAGE_KEY, JSON.stringify(trimmed))

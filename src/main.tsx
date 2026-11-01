@@ -10,7 +10,8 @@ import { StoreProvider } from './lib/store'
 import { ToastProvider } from './components/ui/Toast'
 
 const storedTheme = localStorage.getItem('winglink.theme')
-if (storedTheme !== 'light') document.documentElement.classList.add('dark')
+if (storedTheme === 'light') document.documentElement.classList.remove('dark')
+else document.documentElement.classList.add('dark')
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

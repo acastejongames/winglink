@@ -12,7 +12,7 @@ import { useToast } from '@/components/ui/Toast'
 const CATEGORIES = ['Military', 'Commercial', 'Spotting', 'Simulation', 'History', 'Rotorcraft', 'General']
 
 const PRESET_AVATARS = [
-  'images/f22-sunset.jpg', 'images/a350.jpg', 'images/cockpit-fighter.jpg', 'images/spotting-fence.jpg',
+  'images/f22-sunset.jpg', 'images/a350.jpg', 'images/cockpit-fighter.jpg', 'images/gripen.jpg',
   'images/spitfire.jpg', 'images/helicopters.jpg', 'images/concorde.jpg', 'images/cessna.jpg',
 ]
 const PRESET_BANNERS = [

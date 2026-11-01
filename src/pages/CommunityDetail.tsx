@@ -1,18 +1,19 @@
 import { useMemo, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, Flag, Lock, Shield, Trophy, Users } from 'lucide-react'
 import { useStore } from '@/lib/store'
 import { useI18n } from '@/lib/i18n'
 import { PostCard } from '@/components/feed/PostCard'
 import { PostComposer } from '@/components/feed/PostComposer'
 import { UserAvatar } from '@/components/UserAvatar'
-import { Badge, Button, Card, EmptyState, Spinner, Tabs } from '@/components/ui/Primitives'
+import { Badge, Button, Card, EmptyState, Tabs } from '@/components/ui/Primitives'
 import { SectionHeader } from '@/components/RichText'
 import { ReportModal } from '@/components/modals'
 import { formatCount, timeAgo } from '@/lib/utils'
 
 export default function CommunityDetail() {
   const { slug } = useParams<{ slug: string }>()
+  const navigate = useNavigate()
   const { t, lang } = useI18n()
   const { state, me, toggleJoinCommunity, joinChallenge, getUser } = useStore()
   const [tab, setTab] = useState('feed')
@@ -25,7 +26,13 @@ export default function CommunityDetail() {
     [state.posts, community?.id],
   )
 
-  if (!community) return <Spinner />
+  if (!community) {
+    return (
+      <div className="py-16">
+        <EmptyState title={t('error.notFound')} body={`/communities/${slug}`} action={<Button onClick={() => navigate('/communities')}>{t('nav.home')}</Button>} />
+      </div>
+    )
+  }
 
   const admins = community.adminIds.map((id) => getUser(id)).filter(Boolean)
   const mods = community.modIds.map((id) => getUser(id)).filter(Boolean)

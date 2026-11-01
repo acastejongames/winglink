@@ -38,8 +38,8 @@ function shuffle<T>(arr: T[]): T[] {
 
 function buildRound(mode: QuizMode, difficulty: Difficulty): QuizQuestion[] {
   const pool = quizQuestions.filter((q) => q.mode === mode && q.difficulty === difficulty)
-  const fallback = quizQuestions.filter((q) => q.mode === mode)
-  const chosen = shuffle(pool.length >= ROUND_LENGTH ? pool : [...pool, ...fallback]).slice(0, ROUND_LENGTH)
+  const rest = quizQuestions.filter((q) => q.mode === mode && q.difficulty !== difficulty)
+  const chosen = shuffle(pool.length >= ROUND_LENGTH ? pool : [...pool, ...rest]).slice(0, ROUND_LENGTH)
   return chosen
 }
 
