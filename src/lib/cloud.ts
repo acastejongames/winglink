@@ -168,9 +168,11 @@ function authErrorKey(message: string): string {
   const m = message.toLowerCase()
   if (m.includes('invalid login')) return 'auth.errWrongPassword'
   if (m.includes('already registered') || m.includes('already been registered')) return 'auth.errUserTaken'
+  if (m.includes('database error')) return 'auth.errDb'
   if (m.includes('password')) return 'auth.errPassword'
   if (m.includes('confirm') || m.includes('verified')) return 'auth.confirmEmail'
-  if (m.includes('rate') || m.includes('too many')) return 'auth.errTooMany'
+  if (m.includes('rate') || m.includes('too many') || m.includes('over_email')) return 'auth.errTooMany'
+  if (m.includes('signups') || m.includes('sign ups') || m.includes('sign-up')) return 'auth.errSignupOff'
   return 'auth.errCloud'
 }
 
@@ -192,14 +194,20 @@ export async function cloudSignUp(data: {
       },
     },
   })
-  if (error) return { ok: false, error: authErrorKey(error.message) }
+  if (error) {
+    console.error('[winglink] signUp error:', error.message, error)
+    return { ok: false, error: authErrorKey(error.message) }
+  }
   if (!res.session) return { ok: true, needsConfirm: true }
   return { ok: true }
 }
 
 export async function cloudSignIn(email: string, password: string): Promise<CloudAuthResult> {
   const { error } = await sb().auth.signInWithPassword({ email, password })
-  if (error) return { ok: false, error: authErrorKey(error.message) }
+  if (error) {
+    console.error('[winglink] signIn error:', error.message, error)
+    return { ok: false, error: authErrorKey(error.message) }
+  }
   return { ok: true }
 }
 

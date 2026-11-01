@@ -598,7 +598,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       if (stateRef.current.authUserId === uidAuth) return
       const device = readDeviceLocal()
       try {
-        const [users, posts, social, communities, conversations, notifications, quizRecords] = await Promise.all([
+        let [users, posts, social, communities, conversations, notifications, quizRecords] = await Promise.all([
           cloud.loadUsers(),
           cloud.loadFeed(uidAuth),
           cloud.loadSocial(uidAuth),
@@ -607,6 +607,23 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           cloud.loadNotifications(uidAuth),
           cloud.loadQuizRecords(),
         ])
+        // Self-heal: if the signup trigger failed to create the profile row,
+        // insert our own (RLS allows id = auth.uid() only).
+        if (!users.some((u) => u.id === uidAuth)) {
+          const { data: authUser } = await sb().auth.getUser()
+          const meta = (authUser?.user?.user_metadata ?? {}) as Record<string, string>
+          const uname = (meta.username ?? `pilot_${uidAuth.slice(0, 6)}`).toLowerCase()
+          const { error: healErr } = await sb().from('profiles').upsert({
+            id: uidAuth,
+            username: uname,
+            display_name: meta.display_name ?? uname,
+            interests: Array.isArray(meta.interests) ? meta.interests : [],
+            xp: 150,
+          })
+          if (healErr) console.error('[winglink] profile self-heal failed:', healErr.message)
+          const healed = await cloud.loadUsers()
+          users = healed.length ? healed : users
+        }
         setState((s) => ({
           ...freshState(),
           ...social,

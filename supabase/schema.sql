@@ -350,22 +350,24 @@ end $$;
 create or replace function public.handle_new_user()
 returns trigger language plpgsql security definer set search_path = public as $$
 declare
-  uname text := coalesce(new.raw_user_meta_data ->> 'username', 'pilot_' || substr(new.id::text, 1, 8));
+  uname text := coalesce(new.raw_user_meta_data ->> 'username', 'pilot_' || substr(replace(new.id::text, '-', ''), 1, 8));
   dname text := coalesce(new.raw_user_meta_data ->> 'display_name', uname);
+  ints  text[] := '{}';
 begin
-  insert into public.profiles (id, username, display_name, interests, xp)
-  values (
-    new.id,
-    lower(uname),
-    dname,
-    coalesce(
-      (select array_agg(x) from jsonb_array_elements_text(
-        coalesce(new.raw_user_meta_data -> 'interests', '[]'::jsonb)) x),
-      '{}'
-    ),
-    150
-  )
-  on conflict (id) do nothing;
+  -- Never block account creation: any profile-sync problem is logged as a
+  -- warning and the client self-heals the profile row on first boot.
+  begin
+    if jsonb_typeof(coalesce(new.raw_user_meta_data -> 'interests', '[]'::jsonb)) = 'array' then
+      select coalesce(array_agg(x), '{}')
+      into ints
+      from jsonb_array_elements_text(new.raw_user_meta_data -> 'interests') x;
+    end if;
+    insert into public.profiles (id, username, display_name, interests, xp)
+    values (new.id, lower(uname), dname, ints, 150)
+    on conflict (id) do nothing;
+  exception when others then
+    raise warning 'handle_new_user: profile sync failed (%)', SQLERRM;
+  end;
   return new;
 end $$;
 
@@ -614,6 +616,11 @@ create policy profiles_select on public.profiles for select to authenticated usi
 drop policy if exists profiles_update on public.profiles;
 create policy profiles_update on public.profiles for update to authenticated
   using (id = auth.uid()) with check (id = auth.uid());
+-- Self-heal: if the signup trigger could not create the profile row, the
+-- client inserts its own row on first boot (own id only, nothing else).
+drop policy if exists profiles_insert on public.profiles;
+create policy profiles_insert on public.profiles for insert to authenticated
+  with check (id = auth.uid());
 
 -- posts: visible if public / own / followers-who-follow / community member
 drop policy if exists posts_select on public.posts;
