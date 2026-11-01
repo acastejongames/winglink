@@ -99,14 +99,16 @@ jobs:
           echo "signup → HTTP ${code}"
           cat /tmp/signup.json | head -c 600
           echo
+          BODY=$(head -c 400 /tmp/signup.json | tr '\n' ' ')
           if grep -qi "database error" /tmp/signup.json; then
-            echo "::error title=Signup broken::GoTrue cannot create the user (trigger failing). See raw response above; re-run supabase/schema.sql."
+            echo "::error title=Signup broken::GoTrue cannot create the user (DB trigger failing): ${BODY} — re-run supabase/schema.sql."
             exit 1
           fi
           if [ "${code}" = "200" ] || [ "${code}" = "201" ]; then
-            echo "::notice title=Signup OK::Probe signup succeeded (id $(head -c 200 /tmp/signup.json | sed -n 's/.*\"id\":\"\([^\"]*\\).*/\1/p'))"
+            echo "::notice title=Signup OK::Probe signup succeeded: ${BODY}"
           else
-            echo "::warning title=Signup response::HTTP ${code} — inspect body above"
+            echo "::error title=Signup rejected::HTTP ${code}: ${BODY}"
+            exit 1
           fi
 
       - name: Build
