@@ -1,5 +1,5 @@
 /// <reference types="vitest" />
-import { defineConfig, type Plugin } from 'vite'
+import { defineConfig, loadEnv, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
 import path from 'path'
 
@@ -32,20 +32,35 @@ function baseHrefPlugin(appBase: string): Plugin {
  * dev server keeps HMR working.
  */
 function cspPlugin(): Plugin {
+  // Supabase origin (REST + auth + storage + realtime websocket) must be
+  // allowlisted when the cloud backend is configured — otherwise the browser
+  // silently blocks every backend call (CSP connect-src/img-src).
+  let sbHost = ''
   return {
     name: 'winglink-csp',
     apply: 'build',
+    configResolved(config) {
+      const env = loadEnv(config.mode, process.cwd(), '')
+      const url = env.VITE_SUPABASE_URL || process.env.VITE_SUPABASE_URL || ''
+      try {
+        sbHost = url.startsWith('http') ? new URL(url).host : ''
+      } catch {
+        sbHost = ''
+      }
+    },
     transformIndexHtml(html) {
+      const connect = ["'self'", ...(sbHost ? [`https://${sbHost}`, `wss://${sbHost}`] : [])].join(' ')
+      const imgs = ["'self'", 'data:', 'blob:', ...(sbHost ? [`https://${sbHost}`] : [])].join(' ')
       const csp = [
         "default-src 'self'",
         "base-uri 'self'",
         "object-src 'none'",
         "script-src 'self'",
         "style-src 'self' 'unsafe-inline'",
-        "img-src 'self' data: blob:",
+        `img-src ${imgs}`,
         "media-src 'self' data: blob:",
         "font-src 'self'",
-        "connect-src 'self'",
+        `connect-src ${connect}`,
         "form-action 'self'",
       ].join('; ')
       return html.replace('<head>', `<head>\n    <meta http-equiv="Content-Security-Policy" content="${csp}" />`)

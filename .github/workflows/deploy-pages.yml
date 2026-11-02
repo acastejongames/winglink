@@ -118,6 +118,20 @@ jobs:
           VITE_BASE: /winglink/
           OG_IMAGE: https://acastejongames.github.io/winglink/images/f22-sunset.jpg
 
+      - name: Assert CSP allows Supabase origins
+        if: env.VITE_SUPABASE_URL != ''
+        run: |
+          REF=$(echo "${VITE_SUPABASE_URL}" | sed -E 's#https?://##')
+          if ! grep -q "connect-src 'self' https://${REF} wss://${REF}" dist/index.html; then
+            echo "::error::Production CSP is missing Supabase connect-src (https+wss) for ${REF} — all backend calls would be blocked by the browser."
+            exit 1
+          fi
+          if ! grep -q "img-src .*https://${REF}" dist/index.html; then
+            echo "::error::Production CSP is missing Supabase img-src for ${REF} — storage images would be blocked."
+            exit 1
+          fi
+          echo "✓ CSP allows https://${REF} + wss://${REF}"
+
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
