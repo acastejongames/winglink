@@ -590,6 +590,37 @@ create trigger trg_member_pending after insert on public.community_members
 -- Row Level Security
 -- ═══════════════════════════════════════════════════════════════════
 
+-- Policy helpers: SECURITY DEFINER so policies never query other tables
+-- through RLS (which caused 42P17 infinite recursion between
+-- communities ↔ community_members). Definer bypasses RLS as owner.
+create or replace function public.is_community_member(p_community uuid)
+returns boolean language sql security definer stable set search_path = public as $$
+  select exists (
+    select 1 from public.community_members
+    where community_id = p_community and user_id = auth.uid() and status = 'member'
+  );
+$$;
+
+create or replace function public.is_community_participant(p_community uuid)
+returns boolean language sql security definer stable set search_path = public as $$
+  select exists (
+    select 1 from public.community_members
+    where community_id = p_community and user_id = auth.uid()
+  );
+$$;
+
+create or replace function public.is_conversation_member(p_conv uuid)
+returns boolean language sql security definer stable set search_path = public as $$
+  select exists (
+    select 1 from public.conversation_members
+    where conversation_id = p_conv and user_id = auth.uid()
+  );
+$$;
+
+grant execute on function public.is_community_member(uuid) to authenticated;
+grant execute on function public.is_community_participant(uuid) to authenticated;
+grant execute on function public.is_conversation_member(uuid) to authenticated;
+
 alter table public.profiles enable row level security;
 alter table public.posts enable row level security;
 alter table public.comments enable row level security;
@@ -629,18 +660,12 @@ create policy posts_select on public.posts for select to authenticated using (
   or visibility = 'public'
   or (visibility = 'followers' and exists (
         select 1 from follows f where f.follower_id = auth.uid() and f.followed_id = author_id))
-  or (community_id is not null and exists (
-        select 1 from community_members m
-        where m.community_id = posts.community_id and m.user_id = auth.uid() and m.status = 'member'))
+  or (community_id is not null and public.is_community_member(community_id))
 );
 drop policy if exists posts_insert on public.posts;
 create policy posts_insert on public.posts for insert to authenticated with check (
   author_id = auth.uid()
-  and (
-    community_id is null
-    or exists (select 1 from community_members m
-               where m.community_id = posts.community_id and m.user_id = auth.uid() and m.status = 'member')
-  )
+  and (community_id is null or public.is_community_member(community_id))
 );
 drop policy if exists posts_delete on public.posts;
 create policy posts_delete on public.posts for delete to authenticated using (author_id = auth.uid());
@@ -653,9 +678,7 @@ create policy comments_select on public.comments for select to authenticated usi
        p.author_id = auth.uid() or p.visibility = 'public'
        or (p.visibility = 'followers' and exists (
          select 1 from follows f where f.follower_id = auth.uid() and f.followed_id = p.author_id))
-       or (p.community_id is not null and exists (
-         select 1 from community_members m where m.community_id = p.community_id
-           and m.user_id = auth.uid() and m.status = 'member'))))
+       or (p.community_id is not null and public.is_community_member(p.community_id))))
 );
 drop policy if exists comments_insert on public.comments;
 create policy comments_insert on public.comments for insert to authenticated with check (author_id = auth.uid());
@@ -718,8 +741,7 @@ create policy reports_insert on public.reports for insert to authenticated with 
 drop policy if exists communities_select on public.communities;
 create policy communities_select on public.communities for select to authenticated using (
   visibility = 'public'
-  or exists (select 1 from community_members m
-             where m.community_id = id and m.user_id = auth.uid())
+  or public.is_community_participant(id)
 );
 drop policy if exists communities_insert on public.communities;
 create policy communities_insert on public.communities for insert to authenticated
@@ -739,19 +761,22 @@ drop policy if exists community_members_insert on public.community_members;
 create policy community_members_insert on public.community_members for insert to authenticated
   with check (user_id = auth.uid() and role = 'member');
 drop policy if exists community_members_update on public.community_members;
+create or replace function public.is_community_mod(p_community uuid)
+returns boolean language sql security definer stable set search_path = public as $$
+  select exists (
+    select 1 from public.communities c
+    where c.id = p_community
+      and (auth.uid() = any (c.admin_ids) or auth.uid() = any (c.mod_ids))
+  );
+$$;
+grant execute on function public.is_community_mod(uuid) to authenticated;
+
 create policy community_members_update on public.community_members for update to authenticated
-  using (
-    user_id = auth.uid()  -- approve own pending? no-op; admins approve
-    or exists (select 1 from communities c where c.id = community_id
-               and (auth.uid() = any (c.admin_ids) or auth.uid() = any (c.mod_ids)))
-  ) with check (true);
+  using (user_id = auth.uid() or public.is_community_mod(community_id))
+  with check (true);
 drop policy if exists community_members_delete on public.community_members;
 create policy community_members_delete on public.community_members for delete to authenticated
-  using (
-    user_id = auth.uid()
-    or exists (select 1 from communities c where c.id = community_id
-               and (auth.uid() = any (c.admin_ids) or auth.uid() = any (c.mod_ids)))
-  );
+  using (user_id = auth.uid() or public.is_community_mod(community_id));
 
 -- messaging: members only (the "inbox is invisible to everyone else" guarantee)
 drop policy if exists conversations_select on public.conversations;
@@ -764,24 +789,23 @@ create policy conversations_insert on public.conversations for insert to authent
 
 drop policy if exists conversation_members_select on public.conversation_members;
 create policy conversation_members_select on public.conversation_members for select to authenticated
-  using (user_id = auth.uid());
+  using (user_id = auth.uid() or public.is_conversation_member(conversation_id));
 drop policy if exists conversation_members_insert on public.conversation_members;
 create policy conversation_members_insert on public.conversation_members for insert to authenticated
   with check (user_id = auth.uid());
 drop policy if exists conversation_members_update on public.conversation_members;
 create policy conversation_members_update on public.conversation_members for update to authenticated
   using (user_id = auth.uid()) with check (user_id = auth.uid());
+-- (membership helpers above prevent policy→policy recursion)
 
 drop policy if exists messages_select on public.messages;
 create policy messages_select on public.messages for select to authenticated using (
-  exists (select 1 from conversation_members m
-          where m.conversation_id = messages.conversation_id and m.user_id = auth.uid())
+  public.is_conversation_member(conversation_id)
 );
 drop policy if exists messages_insert on public.messages;
 create policy messages_insert on public.messages for insert to authenticated with check (
   sender_id = auth.uid()
-  and exists (select 1 from conversation_members m
-              where m.conversation_id = messages.conversation_id and m.user_id = auth.uid())
+  and public.is_conversation_member(conversation_id)
 );
 
 -- notifications: private inbox
