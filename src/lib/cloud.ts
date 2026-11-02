@@ -154,6 +154,20 @@ export function rowToPost(r: Record<string, unknown>, ctx: FeedCtx): Post {
   }
 }
 
+/**
+ * Map a caught cloud failure to an i18n key so the UI reports the REAL cause
+ * (network / permissions / size / upload) instead of one generic message.
+ */
+export function cloudErrorKey(e: unknown): string {
+  const msg = String((e as { message?: string })?.message ?? e)
+  const m = msg.toLowerCase()
+  if (m.includes('failed to fetch') || m.includes('networkerror') || m.includes('load failed')) return 'common.errNetwork'
+  if (m.includes('413') || m.includes('payload too large') || m.includes('entity too large')) return 'common.errTooLarge'
+  if (m.includes('row-level security') || m.includes('42501') || m.includes('policy')) return 'common.errPermission'
+  if (m.includes('storage') || m.includes('bucket') || m.includes('object')) return 'common.errUpload'
+  return 'common.errCloud'
+}
+
 // ── Auth ────────────────────────────────────────────────────────────
 
 export interface CloudAuthResult {

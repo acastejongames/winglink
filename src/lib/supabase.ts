@@ -31,11 +31,26 @@ export function sb(): SupabaseClient {
   return client
 }
 
+/** Decode a data-URL to a Blob without fetch() — immune to CSP connect-src rules. */
+function dataUrlToBlob(dataUrl: string): Blob {
+  const comma = dataUrl.indexOf(',')
+  const head = dataUrl.slice(0, comma)
+  const mime = /data:([^;,]+)/.exec(head)?.[1] ?? 'image/jpeg'
+  const isBase64 = head.endsWith(';base64')
+  const body = dataUrl.slice(comma + 1)
+  if (!isBase64) {
+    return new Blob([decodeURIComponent(body)], { type: mime })
+  }
+  const bin = atob(body)
+  const bytes = new Uint8Array(bin.length)
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i)
+  return new Blob([bytes], { type: mime })
+}
+
 /** Upload a data-URL/remote image to the public `media` bucket; returns its public URL. */
 export async function uploadMedia(dataUrl: string, ownerId: string): Promise<string> {
   if (!isCloud) return dataUrl
-  const res = await fetch(dataUrl)
-  const blob = await res.blob()
+  const blob = dataUrlToBlob(dataUrl)
   const ext = blob.type.includes('png') ? 'png' : 'jpg'
   const path = `${ownerId}/${Date.now()}-${Math.random().toString(36).slice(2, 10)}.${ext}`
   const { error } = await sb().storage.from('media').upload(path, blob, {

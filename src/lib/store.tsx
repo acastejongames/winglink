@@ -1192,8 +1192,15 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
       if (isCloud()) {
         void (async () => {
+          let images: string[] | undefined
           try {
-            const images = await hostImages(draft.images, meId)
+            images = await hostImages(draft.images, meId)
+          } catch (e) {
+            console.error('[winglink] image upload failed:', e)
+            toast(t(cloud.cloudErrorKey(e)))
+            return
+          }
+          try {
             const id = await cloud.createPostRemote({
               authorId: meId,
               type: draft.type,
@@ -1241,8 +1248,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
             })
             toast(t('composer.published'))
           } catch (e) {
-            console.error(e)
-            toast(t('common.errCloud'))
+            console.error('[winglink] post insert failed:', e)
+            toast(t(cloud.cloudErrorKey(e)))
           }
         })()
         return
