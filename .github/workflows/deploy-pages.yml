@@ -87,7 +87,7 @@ jobs:
           echo "✓ Supabase: all tables + RPCs present"
 
       - name: Auth signup probe (on-demand)
-        if: (github.event_name == 'workflow_dispatch' && inputs.auth_probe) || contains(github.event.head_commit.message, '[auth-probe]')
+        if: github.event_name == 'workflow_dispatch' && inputs.auth_probe
         run: |
           set -uo pipefail
           PROBE_EMAIL="winglink-ci-probe-${GITHUB_RUN_ID}@example.com"
