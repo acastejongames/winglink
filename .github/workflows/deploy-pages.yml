@@ -135,10 +135,74 @@ jobs:
             sweep "notifications"   "${VITE_SUPABASE_URL}/rest/v1/notifications?select=*&order=created_at.desc&limit=100"
             sweep "quiz_records"    "${VITE_SUPABASE_URL}/rest/v1/quiz_records?select=*&order=played_at.desc&limit=500"
             if [ "${fails}" != "0" ]; then
-              echo "::error title=Bootstrap broken::One or more startup queries fail with a real session — this is the user's error."
+              echo "::error title=Bootstrap broken::One or more startup queries fail with a real session."
               exit 1
             fi
             echo "✓ all bootstrap queries OK with a real session"
+
+            echo "── Publish flow (the user's failing action) ──"
+            UID1=$(curl -s -H "apikey: ${VITE_SUPABASE_ANON_KEY}" -H "Authorization: Bearer ${TOKEN}" \
+              "${VITE_SUPABASE_URL}/auth/v1/user" | sed -n 's/.*\"id\":\"\([0-9a-f-]\{36\}\)\".*/\1/p' | head -1)
+            echo "probe user: ${UID1}"
+
+            # 1) text post
+            code=$(curl -s -o /tmp/post.json -w '%{http_code}' -X POST \
+              -H "apikey: ${VITE_SUPABASE_ANON_KEY}" -H "Authorization: Bearer ${TOKEN}" \
+              -H "Content-Type: application/json" -H "Prefer: return=representation" \
+              "${VITE_SUPABASE_URL}/rest/v1/posts" \
+              -d "{\"author_id\":\"${UID1}\",\"type\":\"text\",\"text\":\"CI probe post\",\"images\":[],\"visibility\":\"public\",\"hashtags\":[],\"mentions\":[]}")
+            if [ "${code}" = "201" ]; then
+              echo "OK   text post insert (201)"
+            else
+              echo "FAIL text post → HTTP ${code} $(head -c 400 /tmp/post.json)"
+              echo "::error title=Post insert failed::HTTP ${code}: $(head -c 400 /tmp/post.json | tr '\n' ' ')"
+              exit 1
+            fi
+            PID=$(sed -n 's/.*\"id\":\"\([0-9a-f-]\{36\}\)\".*/\1/p' /tmp/post.json | head -1)
+
+            # 2) image upload to storage
+            printf '\x89PNG\r\n\x1a\n' > /tmp/probe.png
+            code=$(curl -s -o /tmp/up.json -w '%{http_code}' -X POST \
+              -H "apikey: ${VITE_SUPABASE_ANON_KEY}" -H "Authorization: Bearer ${TOKEN}" \
+              -H "Content-Type: image/png" \
+              --data-binary @/tmp/probe.png \
+              "${VITE_SUPABASE_URL}/storage/v1/object/media/${UID1}/probe.png")
+            if [ "${code}" = "200" ]; then
+              echo "OK   storage upload (200)"
+            else
+              echo "FAIL storage upload → HTTP ${code} $(head -c 300 /tmp/up.json)"
+              echo "::error title=Storage upload failed::HTTP ${code}: $(head -c 300 /tmp/up.json | tr '\n' ' ')"
+            fi
+
+            # 3) second account must SEE the post (cross-user visibility)
+            PROBE2_EMAIL="winglink-ci-reader-${GITHUB_RUN_ID}@example.com"
+            code=$(curl -s -o /tmp/su2.json -w '%{http_code}' -X POST \
+              -H "apikey: ${VITE_SUPABASE_ANON_KEY}" -H "Content-Type: application/json" \
+              "${VITE_SUPABASE_URL}/auth/v1/signup" \
+              -d "{\"email\": \"${PROBE2_EMAIL}\", \"password\": \"CiProbe-Passw0rd-2026\", \"data\": {\"username\": \"ci_reader_${GITHUB_RUN_ID}\", \"display_name\": \"CI Reader\", \"interests\": []}}")
+            TOKEN2=$(sed -n 's/.*\"access_token\":\"\([^\"]*\)\".*/\1/p' /tmp/su2.json)
+            if [ -n "${TOKEN2}" ]; then
+              code=$(curl -s -o /tmp/vis.json -w '%{http_code}' \
+                -H "apikey: ${VITE_SUPABASE_ANON_KEY}" -H "Authorization: Bearer ${TOKEN2}" \
+                "${VITE_SUPABASE_URL}/rest/v1/posts?id=eq.${PID}&select=id")
+              if [ "${code}" = "200" ] && grep -q "${PID}" /tmp/vis.json; then
+                echo "OK   cross-user visibility (second account sees the post)"
+              else
+                echo "FAIL cross-user visibility → HTTP ${code} $(head -c 300 /tmp/vis.json)"
+                echo "::error title=Post invisible to other users::HTTP ${code}: $(head -c 300 /tmp/vis.json | tr '\n' ' ')"
+              fi
+            else
+              echo "::warning title=Second signup::could not create reader account (rate limit?) — visibility check skipped"
+            fi
+
+            # cleanup probe rows
+            [ -n "${PID}" ] && curl -s -o /dev/null -X DELETE \
+              -H "apikey: ${VITE_SUPABASE_ANON_KEY}" -H "Authorization: Bearer ${TOKEN}" \
+              "${VITE_SUPABASE_URL}/rest/v1/posts?id=eq.${PID}"
+            curl -s -o /dev/null -X DELETE \
+              -H "apikey: ${VITE_SUPABASE_ANON_KEY}" -H "Authorization: Bearer ${TOKEN}" \
+              "${VITE_SUPABASE_URL}/storage/v1/object/media/${UID1}/probe.png"
+            echo "✓ publish flow checked"
           else
             echo "::warning title=No token::signup response had no access_token — sweep skipped"
           fi
