@@ -598,14 +598,18 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       if (stateRef.current.authUserId === uidAuth) return
       const device = readDeviceLocal()
       try {
+        const stage = <T,>(label: string, p: Promise<T>): Promise<T> =>
+          p.catch((e) => {
+            throw new Error(`${label}: ${(e as Error).message}`)
+          })
         let [users, posts, social, communities, conversations, notifications, quizRecords] = await Promise.all([
-          cloud.loadUsers(),
-          cloud.loadFeed(uidAuth),
-          cloud.loadSocial(uidAuth),
-          cloud.loadCommunities(uidAuth),
-          cloud.loadConversations(uidAuth),
-          cloud.loadNotifications(uidAuth),
-          cloud.loadQuizRecords(),
+          stage('users', cloud.loadUsers()),
+          stage('feed', cloud.loadFeed(uidAuth)),
+          stage('social', cloud.loadSocial(uidAuth)),
+          stage('communities', cloud.loadCommunities(uidAuth)),
+          stage('messages', cloud.loadConversations(uidAuth)),
+          stage('notifications', cloud.loadNotifications(uidAuth)),
+          stage('quiz', cloud.loadQuizRecords()),
         ])
         // Self-heal: if the signup trigger failed to create the profile row,
         // insert our own (RLS allows id = auth.uid() only).

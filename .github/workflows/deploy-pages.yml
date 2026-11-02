@@ -87,7 +87,7 @@ jobs:
           echo "✓ Supabase: all tables + RPCs present"
 
       - name: Auth signup probe (on-demand)
-        if: github.event_name == 'workflow_dispatch' && inputs.auth_probe
+        if: (github.event_name == 'workflow_dispatch' && inputs.auth_probe) || contains(github.event.head_commit.message, '[auth-probe]')
         run: |
           set -uo pipefail
           PROBE_EMAIL="winglink-ci-probe-${GITHUB_RUN_ID}@example.com"
@@ -100,6 +100,48 @@ jobs:
           cat /tmp/signup.json | head -c 600
           echo
           BODY=$(head -c 400 /tmp/signup.json | tr '\n' ' ')
+          TOKEN=$(sed -n 's/.*\"access_token\":\"\([^\"]*\)\".*/\1/p' /tmp/signup.json)
+          if [ -n "${TOKEN}" ]; then
+            echo "── Authenticated sweep (replicates the app's bootstrap) ──"
+            fails=0
+            sweep() {
+              local label="$1"; shift
+              local code
+              code=$(curl -s -o /tmp/sw.json -w '%{http_code}' \
+                -H "apikey: ${VITE_SUPABASE_ANON_KEY}" -H "Authorization: Bearer ${TOKEN}" "$@")
+              if [ "${code}" = "200" ]; then
+                echo "OK   ${label}"
+              else
+                echo "FAIL ${label} → HTTP ${code} $(head -c 300 /tmp/sw.json)"
+                echo "::error title=Bootstrap query failed::${label} → HTTP ${code}: $(head -c 300 /tmp/sw.json | tr '\n' ' ')"
+                fails=1
+              fi
+            }
+            sweep "profiles"        "${VITE_SUPABASE_URL}/rest/v1/profiles?select=*&limit=2000"
+            sweep "posts"           "${VITE_SUPABASE_URL}/rest/v1/posts?select=*&order=created_at.desc&limit=150"
+            sweep "comments"        "${VITE_SUPABASE_URL}/rest/v1/comments?select=*&limit=1000"
+            sweep "reactions"       "${VITE_SUPABASE_URL}/rest/v1/reactions?select=*&limit=3000"
+            sweep "comment_likes"   "${VITE_SUPABASE_URL}/rest/v1/comment_likes?select=*&limit=3000"
+            sweep "poll_votes"      "${VITE_SUPABASE_URL}/rest/v1/poll_votes?select=*&limit=300"
+            sweep "follows"         "${VITE_SUPABASE_URL}/rest/v1/follows?select=*&limit=5000"
+            sweep "friend_requests" "${VITE_SUPABASE_URL}/rest/v1/friend_requests?select=*&limit=5000"
+            sweep "friendships"     "${VITE_SUPABASE_URL}/rest/v1/friendships?select=*&limit=5000"
+            sweep "blocks"          "${VITE_SUPABASE_URL}/rest/v1/blocks?select=*&limit=5000"
+            sweep "communities"     "${VITE_SUPABASE_URL}/rest/v1/communities?select=*&limit=500"
+            sweep "community_members" "${VITE_SUPABASE_URL}/rest/v1/community_members?select=*&limit=5000"
+            sweep "conversations"   "${VITE_SUPABASE_URL}/rest/v1/conversations?select=*&limit=500"
+            sweep "conversation_members" "${VITE_SUPABASE_URL}/rest/v1/conversation_members?select=*&limit=5000"
+            sweep "messages"        "${VITE_SUPABASE_URL}/rest/v1/messages?select=*&order=created_at.asc&limit=1000"
+            sweep "notifications"   "${VITE_SUPABASE_URL}/rest/v1/notifications?select=*&order=created_at.desc&limit=100"
+            sweep "quiz_records"    "${VITE_SUPABASE_URL}/rest/v1/quiz_records?select=*&order=played_at.desc&limit=500"
+            if [ "${fails}" != "0" ]; then
+              echo "::error title=Bootstrap broken::One or more startup queries fail with a real session — this is the user's error."
+              exit 1
+            fi
+            echo "✓ all bootstrap queries OK with a real session"
+          else
+            echo "::warning title=No token::signup response had no access_token — sweep skipped"
+          fi
           if grep -qi "database error" /tmp/signup.json; then
             echo "::error title=Signup broken::GoTrue cannot create the user (DB trigger failing): ${BODY} — re-run supabase/schema.sql."
             exit 1
